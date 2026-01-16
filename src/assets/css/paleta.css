@@ -1,0 +1,15 @@
+:root {
+  /* Brand */
+  --color-primary: #780000;
+  --color-secondary: #111010;
+
+  /* Neutrales */
+  --color-bg: #fdf0d5;
+  --color-text: #1a1a1a;
+  --color-muted: #6c757d;
+
+  /* Estados */
+  --color-success: #308a2dfd;
+  --color-warning: #f19345;
+  --color-danger: #e63946;
+}
