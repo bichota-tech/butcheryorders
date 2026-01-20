@@ -1,12 +1,10 @@
 <template>
   <div id="app">
     <Navbar />
-
     <main id="app-content">
       <router-view />
     </main>
-
-    <Footer />
+    <Footer></Footer>
   </div>
 </template>
 
@@ -15,24 +13,25 @@ import Footer from './components/footer.vue';
 import Navbar from './components/navbar.vue';
 </script>
 
-<style scoped>
-html,
-body,
-#app {
+<style>
+* {
   margin: 0;
   padding: 0;
-  height: 100%;
+  box-sizing: border-box;
 }
 
 #app {
   display: flex;
   flex-direction: column;
-  height: auto;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
 }
 
-/* Contenido principal ocupa todo lo que sobra */
 #app-content {
-  flex: 1; /* crece para llenar el espacio disponible */
-  overflow-y: auto; /* permite scroll si hay mucho contenido */
+  background-color: var(--color-bg);
+  flex: 1;
+  overflow-y: auto;
 }
 </style>

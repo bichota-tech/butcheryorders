@@ -1,10 +1,10 @@
 :root {
   /* Brand */
-  --color-primary: #780000;
-  --color-secondary: #111010;
+  --color-primary: #780000d5;
+  --color-secondary: #030303;
 
   /* Neutrales */
-  --color-bg: #fdf0d5;
+  --color-bg: #f8f8f8;
   --color-text: #1a1a1a;
   --color-muted: #6c757d;
 

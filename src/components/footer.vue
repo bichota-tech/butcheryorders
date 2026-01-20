@@ -1,20 +1,20 @@
 <template>
-    <div>
-        <p>adalid sfdgfdgdfgdf</p>
-    </div>
-
+    <footer class="footer">
+        <div>
+            <p>adalid sfdgfdgdfgdf</p>
+        </div>
+    </footer>
 </template>
-
+<script setup></script>
 <style scoped>
 /* Footer siempre al final */
-*{ 
+.footer { 
+    bottom: 0;
     width: 100%;
-    height: auto;
+    height: 3rem;
     background-color: var(--color-secondary);
 }
 p {
-    color: var(--color-bg);
-    /* si quieres que siempre quede al final y no se pegue al contenido */
-    /* ya se coloca automáticamente gracias al flex y flex:1 del main */
+    color: var(--color-bg);  
 }
 </style>
