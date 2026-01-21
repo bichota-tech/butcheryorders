@@ -3,7 +3,7 @@
         <h2>Panel de Gestión</h2>
         <div class="dashcontainer">
             <div class="counter orders">
-                <div class="icon">
+                <div class="icon" style="border:2px solid var(--color-primary);">
                     <i class="bi bi-bag-check" style="color: var(--color-primary);"></i>
                 </div>
                 <div class="content">
@@ -15,7 +15,7 @@
             </div>
 
             <div class="counter pending">
-                <div class="icon">
+                <div class="icon"style="border:2px solid var(--color-warning);">
                     <i class="bi bi-clock-history" style="color: var(--color-warning);"></i>
                 </div>
                 <div class="content">
@@ -27,7 +27,7 @@
             </div>
 
             <div class="counter completed">
-                <div class="icon">
+                <div class="icon" style="border:2px solid var(--color-success);">
                     <i class="bi bi-check2-circle" style="color: var(--color-success);"></i>
                 </div>
                 <div class="content">
@@ -39,8 +39,8 @@
             </div>
 
             <div class="counter sold">
-                <div class="icon">
-                    <i class="bi bi-graph-up-arrow" style="color: var(--color-secundary);"></i>
+                <div class="icon"style="border:2px solid var(--color-secondary);">
+                    <i class="bi bi-graph-up-arrow" style="color: var(--color-secondary);"></i>
                 </div>
                 <div class="content">
                     <span>Ventas hoy</span>
