@@ -33,5 +33,6 @@ import Navbar from './components/navbar.vue';
   background-color: var(--color-bg);
   flex: 1;
   overflow-y: auto;
+  z-index: -1;
 }
 </style>
