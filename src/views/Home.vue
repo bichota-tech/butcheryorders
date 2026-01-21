@@ -1,9 +1,7 @@
 <!--contenido html de la vista home-->
 <template> 
-   <h1>Inicio del dashborad</h1>
     <Dashboard />
     <Orderlist />
-    
 </template>
 
 <!--contenido js de la vista home-->
@@ -15,6 +13,4 @@ import Orderlist from '@/components/orderlist.vue';
 </script>
 
 <!--contenido css de la vista home-->
-<style  scoped>
-
-</style>
+<style  scoped></style>

@@ -1,10 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Carattere&family=Habibi&display=swap');
+
 :root {
   /* Brand */
-  --color-primary: #780000d5;
-  --color-secondary: #030303;
+  --color-primary: rgba(120, 0, 0, 0.835);
+  --color-secondary: rgb(3, 3, 3);
 
   /* Neutrales */
-  --color-bg: #f8f8f8;
+  --color-bg: rgb(248, 248, 248);
   --color-text: #1a1a1a;
   --color-muted: #6c757d;
 
@@ -12,4 +14,23 @@
   --color-success: #308a2dfd;
   --color-warning: #f19345;
   --color-danger: #e63946;
+  --font-titles:  "Carattere", cursive;
+  --font-text:"Habibi", serif;
 }
+
+body{
+  font-family: var(--font-text);
+}
+
+.habibi-regular {
+  font-family: "Habibi", serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.carattere-regular {
+  font-family: "Carattere", cursive;
+  font-weight: 400;
+  font-style: normal;
+}
+
