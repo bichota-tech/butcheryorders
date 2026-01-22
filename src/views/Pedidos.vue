@@ -1,3 +1,9 @@
 <template>
-    <h1>Pedidos</h1>
+    <Orderdetail/>
 </template>
+<style scoped>
+    
+</style>
+<script setup>
+import Orderdetail from '@/components/orderdetail.vue';
+</script>

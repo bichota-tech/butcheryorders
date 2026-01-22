@@ -6,10 +6,8 @@
 
 <!--contenido js de la vista home-->
 <script setup> 
-
 import Dashboard from '@/components/dashboard.vue';
 import Orderlist from '@/components/orderlist.vue';
-
 </script>
 
 <!--contenido css de la vista home-->
