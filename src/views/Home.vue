@@ -9,7 +9,6 @@
 
 <!--contenido js de la vista home-->
 <script setup> 
-
 import Dashboard from '@/components/dashboard.vue';
 import Voicebottom from '@/components/voicebottom.vue';
 

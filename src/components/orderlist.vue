@@ -1,9 +1,9 @@
 <template>
     <section class="listcontainer">
         <div class="orders">
-                <RouterLink to="" class="order-link"
+            <RouterLink to="" class="order-link"
                 aria-label="`Ver detalles del pedido ${order.number}`">
-                    <span class="order-info">
+                <span class="order-info">
                         <span class="order-meta">
                             <span class="order-number">#001</span>
                             <span class="order-status">Pendiente</span>
@@ -12,29 +12,22 @@
                     </span>
                     <span><i class="bi bi-chevron-right"></i></span>
                 </RouterLink>
-            
-            
-                <RouterLink to="" class="order-link"
-                    aria-label="`Ver detalles del pedido ${order.number}`">
-                    <span class="order-info">
-                        <span class="order-meta">
-                            <span class="order-number">#001</span>
-                            <span class="order-status">Pendiente</span>
-                        </span>
-                        <span class="order-name">Adalid</span>
+            <RouterLink to="/pedidos" class="order-link" aria-label="Ver detalles del pedido #001">
+                <span class="order-info">
+                    <span class="order-meta">
+                        <span class="order-number">#001</span>
+                        <span class="order-status">Pendiente</span>
                     </span>
-                    <span><i class="bi bi-chevron-right"></i></span>
-                </RouterLink>
-            
-            
-                <RouterLink to="" class="order-link"
-                    aria-label="`Ver detalles del pedido ${order.number}`">
-                    <span class="order-info">
-                        <span class="order-meta">
-                            <span class="order-number">#001</span>
-                            <span class="order-status">Pendiente</span>
-                        </span>
-                        <span class="order-name">Adalid</span>
+                    <span class="order-name">Adalid</span>
+                </span>
+                <span><i class="bi bi-chevron-right"></i></span>
+            </RouterLink>
+
+            <RouterLink to="/pedidos" class="order-link" aria-label="Ver detalles del pedido #001">
+                <span class="order-info">
+                    <span class="order-meta">
+                        <span class="order-number">#001</span>
+                        <span class="order-status">Pendiente</span>
                     </span>
                     <span><i class="bi bi-chevron-right"></i></span>
                 </RouterLink>
@@ -99,30 +92,48 @@
         column-gap: .7rem;
     }
 
-    span.order-number, span.order-status, span.order-name{
-        padding: .3rem .7rem;
-        border-radius: 15px;
-        width: fit-content;
-        color: var(--color-bg);
-        font-weight: 600;
-    }
+.order-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    row-gap: .3rem;
+    margin-left: 1rem;
+}
 
-    span.order-number{
-        background-color: var(--color-muted);
-        font-size: small;
-    }
+.order-meta {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    column-gap: .3rem;
+}
 
-    span.order-status{
-        background-color: var(--color-warning);
-        font-size: small;
-    }
+span.order-number,
+span.order-status,
+span.order-name {
+    padding: .3rem .7rem;
+    border-radius: 15px;
+    width: fit-content;
+    color: var(--color-bg);
+    font-weight: 600;
+    font-size: small;
+}
 
-    span.order-name{
-        background-color: var(--color-primary);
-    }
+span.order-number {
+    background-color: var(--color-muted);
+}
 
-    span i{
-        margin-right: 2rem;
-        
-    }
+span.order-status {
+    background-color: var(--color-warning);
+}
+
+span.order-name {
+    background-color: var(--color-primary);
+}
+
+span i {
+    margin-right: 1rem;
+    color: rgba(120, 0, 0, 0.897);
+    font-size: larger;
+}
+
 </style>
