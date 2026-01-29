@@ -1,6 +1,5 @@
 <template>
     <section class="container">
-        <h2>Panel de Gestión</h2>
         <div class="dashcontainer">
             <div class="counter orders">
                 <div class="icon" style="border:2px solid var(--color-primary);">
@@ -59,13 +58,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding-block: 3rem;
-}
-
-h2{
-    font-family: var(--font-text);
-    font-weight: 600;
-    font-size: 1.8rem;
+    width: 60%;
 }
 
 .dashcontainer {
@@ -74,7 +67,6 @@ h2{
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
-    padding: 1.5rem;
     gap: 1.8rem;
 }
 

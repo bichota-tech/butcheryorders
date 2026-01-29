@@ -1,8 +1,6 @@
 <template>
-    <section class="ordercontainer">
-        <h3>Pedidos Recientes</h3>
+    <section class="listcontainer">
         <div class="orders">
-            
                 <RouterLink to="" class="order-link"
                 aria-label="`Ver detalles del pedido ${order.number}`">
                     <span class="order-info">
@@ -40,20 +38,21 @@
                     </span>
                     <span><i class="bi bi-chevron-right"></i></span>
                 </RouterLink>
-           
+
         </div>
     </section>
 </template>
+
 <script setup></script>
+
 <style scoped>
-    .ordercontainer{
+    .listcontainer{
         display: flex;
         justify-content: center;
-        align-items: center;
+        align-items: initial;
         flex-direction: column;
-        padding: 1rem;
-        background-color: var(--color-muted);
-        padding-block: 3rem;
+        width: 50%;
+        overflow-y: scroll;
     }
     
     h3{
@@ -68,29 +67,28 @@
         justify-content: center;
         align-items: center;
         row-gap: 1rem;
-        padding: 1rem;
-        width: 80%;
+        margin-top: 2rem;
+        width: 100%;
     }
 
     a{
-        padding: 1rem;
-        background-color: var(--color-bg);
-        border-radius: 25px;
-        width: 100%;
+        padding: .7rem;
         text-decoration: none;
+        background-color: var(--color-muted);
         color: var(--color-text);
+        border-radius: 25px;
+        width: 90%;
         display: flex;
         flex-direction: row;
         justify-content: space-between;
         align-items: center;
-        
     }
 
     .order-info{
         display: flex;
         flex-direction: column;
         justify-content: center;
-        row-gap: 1rem;
+        row-gap: .5rem;
         margin-left: 2rem;
     }
     
