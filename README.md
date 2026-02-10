@@ -1,38 +1,91 @@
-# butcheryordersfiles
+# ButcheryOrders — App de pedidos por voz (learning in progress)
 
-This template should help get you started developing with Vue 3 in Vite.
+Aplicación frontend para gestionar pedidos mediante voz (prototipo).  
+El objetivo es practicar **UI de flujo de pedidos**, **estructura SPA en Vue** y mejorar la experiencia del usuario.
 
-## Recommended IDE Setup
+Frontend app for managing orders via voice (prototype).  
+The goal is to practice **order flow UI**, **SPA structure in Vue**, and improve user experience.
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+---
 
-## Recommended Browser Setup
+## 🎯 Propósito / Purpose (aprendizaje / learning)
+Este proyecto me permite:
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+- Aprender estructura de proyectos con **Vue 3 + Vite**
+- Diseñar un flujo de pedidos simple y claro
+- Preparar integración futura con APIs de voz
 
-## Customize configuration
+This project helps me:
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+- Learn **Vue 3 + Vite** project structure
+- Design a clear and simple order flow
+- Prepare for future voice API integrations
 
-## Project Setup
+---
 
-```sh
+## ✨ Funcionalidades actuales / Current features
+- Interfaz base para gestión de pedidos
+- SPA inicial con estructura de componentes
+- Proyecto preparado para crecimiento
+
+---
+
+## 🧩 Tecnologías / Tech stack
+- **Vue 3**
+- **Vite**
+- **JavaScript**
+- **HTML / CSS**
+
+---
+
+## 🧠 Aprendizajes clave / Key learnings
+- Organización de un proyecto SPA moderno
+- Separación de UI por componentes
+- Configuración base de Vite
+
+---
+
+## ⚠️ Limitaciones actuales / Current limitations
+- Sin backend
+- Sin integración real de voz
+- Sin persistencia de datos
+
+---
+
+## 🔮 Próximas mejoras / Next steps
+- Integrar API de voz (speech-to-text)
+- Guardar pedidos en base de datos
+- Mejorar UX del flujo de pedidos
+- Añadir tests básicos
+
+---
+
+## 🚀 Uso local / Local usage
+```bash
 npm install
-```
-
-### Compile and Hot-Reload for Development
-
-```sh
 npm run dev
 ```
 
-### Compile and Minify for Production
+---
 
-```sh
-npm run build
+## 📂 Estructura general / Structure
 ```
+butcheryorders/
+├── public/
+├── src/
+├── index.html
+├── package.json
+└── vite.config.js
+```
+
+---
+
+## 👤 Autor / Author
+Ada (bichota-tech)  
+GitHub: https://github.com/bichota-tech  
+
+---
+
+## 📄 Licencia / License
+Este proyecto se publica con fines demostrativos.  
+This project is published for demonstration purposes.
