@@ -1,23 +1,33 @@
 <template>
   <div id="app">
-    <Navbar />
-    <main id="app-content">
+    <Navbar v-if="!hideLayout" />
+    <main id="app-content" :class="{ 'd-flex align-items-center justify-content-center': hideLayout }">
       <router-view />
     </main>
-    <Footer></Footer>
+    <Footer v-if="!hideLayout" />
   </div>
 </template>
 
 <script setup>
-import Footer from './components/footer.vue';
-import Navbar from './components/navbar.vue';
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import Footer from './components/footer.vue'
+import Navbar from './components/navbar.vue'
+
+const route = useRoute()
+const hideLayout = computed(() => ['Login', 'Register'].includes(route.name))
 </script>
 
 <style>
+/* Global styles */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+}
+
+:root {
+  --color-bg: #f8f9fa; /* Light gray background */
 }
 
 #app {
@@ -25,14 +35,11 @@ import Navbar from './components/navbar.vue';
   flex-direction: column;
   width: 100%;
   min-height: 100vh;
-  margin: 0;
-  padding: 0;
 }
 
 #app-content {
   background-color: var(--color-bg);
   flex: 1;
   overflow-y: auto;
-  z-index: -1;
 }
 </style>
