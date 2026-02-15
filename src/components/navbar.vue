@@ -1,118 +1,141 @@
 <template>
-    <header class="header">
-        <div class="navbar">
-            <div class="logo">
-                <img src="../assets/img/logo.png" alt="Logo carnicería">
-                <div class="descr">
-                    <h1>Carnicería</h1>
-                    <span>Gestión de Pedidos</span>
-                </div>
-            </div>
-            <nav class="menu">
-                <ul>
-                    <li>
-                        <RouterLink to="/">Panel de Gestión</RouterLink>
-                    </li>
-                    <li>
-                        <RouterLink to="/pedidos">Pedidos</RouterLink>
-                    </li>
-                    <li>
-                        <RouterLink to="/formulario">Nuevo Pedido</RouterLink>
-                    </li>
-                </ul>
-            </nav>
+  <header class="header">
+    <div class="navbar">
+      <div class="logo">
+        <!-- <img src="../assets/img/logo.png" alt="Logo carnicería"> -->
+        <div class="descr ps-3">
+          <h1>Carnicería</h1>
+          <span>Gestión de Pedidos</span>
         </div>
-    </header>
+      </div>
+      <nav class="menu" v-if="authStore.isAuthenticated">
+        <ul>
+          <li>
+            <RouterLink to="/" active-class="active">Panel</RouterLink>
+          </li>
+          <li>
+            <RouterLink to="/pedidos" active-class="active">Pedidos</RouterLink>
+          </li>
+          <li>
+            <RouterLink to="/new-order" active-class="active">Nuevo Pedido</RouterLink>
+          </li>
+        </ul>
+      </nav>
+      <div class="user-actions pe-3" v-if="authStore.isAuthenticated">
+        <span class="me-3 fw-bold">{{ authStore.user?.name || 'Usuario' }}</span>
+        <button @click="handleLogout" class="btn btn-outline-danger btn-sm">
+          <i class="bi bi-box-arrow-right"></i> Salir
+        </button>
+      </div>
+    </div>
+  </header>
 </template>
-<script setup></script>
+
+<script setup>
+import { RouterLink } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
+
+function handleLogout() {
+  authStore.logout()
+}
+</script>
+
 <style scoped>
 /* Contenedor principal como flex vertical */
 .header {
-    position: sticky;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: auto;
-    display: flex;
-    justify-content: center;
+  position: sticky;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: auto;
+  display: flex;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
 }
 
 .navbar {
-    width: 100%;
-    height: auto;
-    padding: 0;
-    z-index: 1000;
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    justify-content: space-around;
-    align-items: center;
-    background: rgba(248, 248, 248, 0.7);
-    border-radius: 16px;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-    backdrop-filter: blur(3.5px);
-    -webkit-backdrop-filter: blur(3.5px);
-    border: 1px solid rgba(248, 248, 248, 0.13);
+  width: 100%;
+  max-width: 1200px;
+  height: auto;
+  padding: 0.5rem;
+  z-index: 1000;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .menu ul {
-    width: 100%;
-    height: auto;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    column-gap: 1.5rem;
-    padding: 0;
-    margin: 0;
+  width: auto;
+  height: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  column-gap: 1rem;
+  padding: 0;
+  margin: 0;
 }
 
 li {
-    list-style: none;
+  list-style: none;
 }
 
 a {
-    text-decoration: none;
-    color: var(--color-bg);
-    font-family: var(--font-titles);
-    font-weight: 600;
-    font-size: 1.5rem;
-    letter-spacing: .15rem;
-    padding: .7rem .9rem;
-    background-color: var(--color-primary);
-    border-radius: 15px;
+  text-decoration: none;
+  color: #333;
+  font-family: var(--font-titles, sans-serif);
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+a:hover, a.active {
+  background-color: var(--color-primary, #0d6efd);
+  color: white;
 }
 
 .logo {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    column-gap: .7rem;
-    padding: .5rem;
-    width: 30%;
-    height: auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  column-gap: .7rem;
+  height: auto;
 }
 
 .descr {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 h1 {
-    font-family: var(--font-titles);
-    font-weight: 600;
-    font-size: 2rem;
-    letter-spacing: .15rem;
-    margin: 0;
+  font-family: var(--font-titles, sans-serif);
+  font-weight: 700;
+  font-size: 1.5rem;
+  margin: 0;
+  color: #333;
 }
 
 span {
-    font-family: var(--font-text);
-    font-weight: 600;
+  font-family: var(--font-text, sans-serif);
+  font-size: 0.9rem;
+  color: #666;
 }
 
-img {
-    width: 22%;
+.user-actions {
+  display: flex;
+  align-items: center;
 }
 </style>
