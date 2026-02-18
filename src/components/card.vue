@@ -26,24 +26,16 @@
               <tr>
                 <th>Producto</th>
                 <th class="text-center">Cant.</th>
-                <th class="text-end">Precio</th>
-                <th class="text-end">Total</th>
+                <th class="text-center">Unidad</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="item in ordersStore.currentOrder.items" :key="item.id">
                 <td>{{ item.product?.name || 'Producto desconocido' }}</td>
-                <td class="text-center">{{ item.quantity }} {{ item.unit }}</td>
-                <td class="text-end">{{ formatCurrency(item.priceAtTime) }}</td>
-                <td class="text-end fw-bold">{{ formatCurrency(item.quantity * item.priceAtTime) }}</td>
+                <td class="text-center">{{ item.quantity }}</td>
+                <td class="text-center">{{ item.unit }}</td>
               </tr>
             </tbody>
-            <tfoot class="table-light">
-              <tr>
-                <td colspan="3" class="text-end fw-bold">Total</td>
-                <td class="text-end fw-bold fs-5">{{ formatCurrency(ordersStore.currentOrder.totalAmount) }}</td>
-              </tr>
-            </tfoot>
           </table>
         </div>
         
@@ -56,13 +48,21 @@
       <div class="card-footer bg-white border-top p-3 d-flex justify-content-end gap-2">
          <button 
            v-if="ordersStore.currentOrder.status === 'PENDING'"
+           @click="completeOrder" 
+           class="btn btn-success"
+           :disabled="loading"
+         >
+           <i class="bi bi-check2-circle me-1"></i>
+           Completar Pedido
+         </button>
+         <button 
+           v-if="ordersStore.currentOrder.status === 'PENDING'"
            @click="cancelOrder" 
            class="btn btn-outline-danger"
            :disabled="loading"
          >
            Cancelar Pedido
          </button>
-         <!-- Admin actions could go here -->
       </div>
     </div>
   </section>
@@ -74,6 +74,20 @@ import { useOrdersStore } from '@/stores/orders'
 
 const ordersStore = useOrdersStore()
 const loading = ref(false)
+
+async function completeOrder() {
+  if (!confirm('¿Marcar este pedido como completado?')) return
+  
+  loading.value = true
+  try {
+    await ordersStore.updateOrder(ordersStore.currentOrder.id, 'COMPLETED')
+  } catch (error) {
+    console.error(error)
+    alert('Error al completar el pedido')
+  } finally {
+    loading.value = false
+  }
+}
 
 async function cancelOrder() {
   if (!confirm('¿Estás seguro de que quieres cancelar este pedido?')) return
@@ -111,10 +125,6 @@ function formatStatus(status) {
 
 function formatDate(dateString) {
   return new Date(dateString).toLocaleString()
-}
-
-function formatCurrency(amount) {
-  return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(amount)
 }
 </script>
 

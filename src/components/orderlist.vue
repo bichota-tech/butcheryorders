@@ -3,14 +3,6 @@
     <div class="header-actions">
       <h3>Lista de Pedidos</h3>
       <div class="d-flex gap-2">
-        <button 
-            class="btn btn-sm" 
-            :class="voiceStore.isRecording ? 'btn-danger' : 'btn-outline-primary'"
-            @click="toggleVoiceCommand"
-        >
-            <i class="bi" :class="voiceStore.isRecording ? 'bi-stop-fill' : 'bi-mic-fill'"></i> 
-            {{ voiceStore.isRecording ? 'Escuchando...' : 'Comandos Voz' }}
-        </button>
         <button class="btn btn-sm btn-success" @click="ordersStore.exportOrders" :disabled="ordersStore.loading">
             <i class="bi bi-file-earmark-excel"></i> Exportar
         </button>
@@ -45,7 +37,7 @@
         </div>
         <div class="col-12 d-flex justify-content-end gap-2 mt-2">
              <button class="btn btn-sm btn-outline-secondary" @click="clearFilters">Limpiar</button>
-             <button class="btn btn-sm btn-primary" @click="ordersStore.fetchOrders(1)">Filtrar</button>
+             <button class="btn btn-sm btn-primary" @click="applyFilters">Filtrar</button>
         </div>
       </div>
     </div>
@@ -76,10 +68,9 @@
             </span>
             <span class="order-date">{{ formatDate(order.createdAt) }}</span>
           </span>
-          <span class="order-total">{{ formatCurrency(order.totalAmount) }}</span>
           <!-- Show first few items for context -->
-          <span class="order-summary text-muted small text-truncate" style="max-width: 250px;">
-             {{ order.items?.map(i => `${i.quantity} ${i.product?.name || i.productName}`).join(', ') }}
+          <span class="order-summary text-muted small text-truncate" style="max-width: 350px;">
+             {{ order.items?.map(i => `${i.quantity} ${i.unit} ${i.product?.name || i.productName}`).join(', ') }}
           </span>
         </span>
         <span><i class="bi bi-chevron-right"></i></span>
@@ -108,133 +99,31 @@
 </template>
 
 <script setup>
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useOrdersStore } from '@/stores/orders'
-import { useVoiceSessionStore } from '@/stores/voiceSession'
 import { getProducts } from '@/services/productsService'
-import { processTranscript } from '@/services/voiceService'
-import { useVoiceRecording } from '@/composables/useVoiceRecording'
 
 const ordersStore = useOrdersStore()
-const voiceStore = useVoiceSessionStore()
 const products = ref([])
-
-// Initialize voice recording
-const recording = useVoiceRecording()
-// Create a wrapper for isRecording since it's not directly returned as a ref from composable
-// The composable uses the store state internally, but doesn't return the store's state ref
-// So we use voiceStore.isRecording in the template
 
 onMounted(async () => {
   ordersStore.fetchOrders()
   products.value = await getProducts()
-  
-  // Initialize speech recognition support check
-  recording.initRecognition() 
 })
+
+function applyFilters() {
+  ordersStore.fetchOrders(1)
+}
 
 function clearFilters() {
     ordersStore.filters.startDate = ''
     ordersStore.filters.endDate = ''
     ordersStore.filters.status = ''
     ordersStore.filters.productId = ''
-    ordersStore.fetchOrders(1)
-}
-
-// Voice Command Logic
-async function toggleVoiceCommand() {
-    if (voiceStore.isRecording) {
-        // Stop and Process
-        recording.stopRecording()
-        
-        // Short delay to ensure final transcript
-        setTimeout(async () => {
-            const transcript = voiceStore.transcript
-            if (!transcript) return
-
-            try {
-                // Show processing indicator?
-                const result = await processTranscript(transcript)
-                
-                if (result.intent === 'command') {
-                    handleCommands(result.commands)
-                } else {
-                    alert('No reconocí un comando de gestión. Intenta "Filtrar por Tiernera" o "Ver pedidos de hoy".')
-                }
-            } catch (e) {
-                console.error('Command processing error:', e)
-                alert('Error al procesar el comando voz.')
-            }
-        }, 500)
-    } else {
-        // Start
-        voiceStore.resetSession()
-        recording.startRecording()
-    }
-}
-
-function handleCommands(commands) {
-    let filtersChanged = false
-
-    commands.forEach(cmd => {
-        if (cmd.command === 'filter_date') {
-            const { start, end } = getDateRange(cmd.value)
-            if (start && end) {
-                ordersStore.filters.startDate = start
-                ordersStore.filters.endDate = end
-                filtersChanged = true
-            }
-        }
-        
-        if (cmd.command === 'filter_product') {
-            const product = findProduct(cmd.value)
-            if (product) {
-                ordersStore.filters.productId = product.id
-                filtersChanged = true
-            }
-        }
-
-        if (cmd.command === 'export_excel') {
-            ordersStore.exportOrders()
-        }
-    })
-
-    if (filtersChanged) {
+    // Use nextTick-like approach: ensure filters are cleared before fetching
+    setTimeout(() => {
         ordersStore.fetchOrders(1)
-    }
-}
-
-function getDateRange(period) {
-    const today = new Date()
-    const start = new Date(today)
-    const end = new Date(today)
-
-    if (period === 'hoy') {
-        // Just keep standard
-    } else if (period === 'ayer') {
-        start.setDate(today.getDate() - 1)
-        end.setDate(today.getDate() - 1)
-    } else if (period === 'esta semana') {
-        const day = today.getDay() || 7 // Get current day number, converting Sun. to 7
-        if (day !== 1) start.setHours(-24 * (day - 1)) // Set to Monday
-        // End is already today, or set to Sunday?
-        // User probably expects "so far this week" or "whole week"?
-        // Let's set end to next Sunday
-        end.setDate(today.getDate() + (7 - day)) 
-    }
-
-    return {
-        start: start.toISOString().split('T')[0],
-        end: end.toISOString().split('T')[0]
-    }
-}
-
-function findProduct(name) {
-    const term = name.toLowerCase()
-    return products.value.find(p => 
-        p.name.toLowerCase().includes(term) || 
-        term.includes(p.name.toLowerCase())
-    )
+    }, 0)
 }
 
 function selectOrder(order) {
@@ -263,10 +152,6 @@ function formatStatus(status) {
 
 function formatDate(dateString) {
   return new Date(dateString).toLocaleDateString()
-}
-
-function formatCurrency(amount) {
-  return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(amount)
 }
 </script>
 
@@ -354,11 +239,5 @@ h3 {
 .order-date {
   font-size: 0.8rem;
   color: #999;
-}
-
-.order-total {
-  font-weight: bold;
-  font-size: 1.1rem;
-  color: #333;
 }
 </style>

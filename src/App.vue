@@ -41,5 +41,9 @@ const hideLayout = computed(() => ['Login', 'Register'].includes(route.name))
   background-color: var(--color-bg);
   flex: 1;
   overflow-y: auto;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 0 1rem;
 }
 </style>
