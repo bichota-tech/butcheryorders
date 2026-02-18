@@ -1,4 +1,5 @@
 import logger from '../utils/logger.js'
+import { extractClientInfo } from '../utils/nlp.utils.js'
 
 /**
  * Extract order intent and items from voice transcript
@@ -141,12 +142,19 @@ export const extractOrderIntent = (transcript) => {
 
     logger.info('Intent extraction complete', { intent, itemCount: orderItems.length, confidence })
 
+    // Extract client info (Name, Phone, Date)
+    const clientData = extractClientInfo(transcript)
+    if (clientData.clientName || clientData.clientPhone || clientData.pickupDate) {
+        logger.info('Extracted client data', clientData)
+    }
+
     return {
         intent,
         items: orderItems,
         commands: [],
         confidence,
-        originalTranscript: transcript
+        originalTranscript: transcript,
+        clientData
     }
 }
 

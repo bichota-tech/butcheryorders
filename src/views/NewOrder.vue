@@ -181,9 +181,19 @@ async function processTranscript() {
   isProcessing.value = true
   try {
     const result = await voiceService.processTranscript(voiceStore.transcript)
+    
+    // Set Recognized Items
     if (result.items) {
       voiceStore.setRecognizedItems(result.items)
     }
+
+    // Set Client Data if found
+    if (result.clientData) {
+      if (result.clientData.clientName) clientName.value = result.clientData.clientName
+      if (result.clientData.clientPhone) clientPhone.value = result.clientData.clientPhone
+      if (result.clientData.pickupDate) pickupDate.value = result.clientData.pickupDate
+    }
+
   } catch (error) {
     voiceStore.setError('Error al procesar el audio. Intenta de nuevo.')
     console.error(error)
