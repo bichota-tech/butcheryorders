@@ -26,6 +26,20 @@ export const parseSpanishDate = (text) => {
     try {
         const lower = text.toLowerCase()
 
+        // Check for DD/MM/YYYY or DD-MM-YYYY
+        const slashMatch = text.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{4}))?/)
+        if (slashMatch) {
+            const day = parseInt(slashMatch[1])
+            const month = parseInt(slashMatch[2]) - 1 // JS months are 0-11
+            const year = slashMatch[3] ? parseInt(slashMatch[3]) : new Date().getFullYear()
+
+            const date = new Date(year, month, day)
+            const yyyy = date.getFullYear()
+            const mm = String(date.getMonth() + 1).padStart(2, '0')
+            const dd = String(date.getDate()).padStart(2, '0')
+            return `${yyyy}-${mm}-${dd}`
+        }
+
         // Extract day
         let day = null
         // Check for "diecinueve" or digits "19"

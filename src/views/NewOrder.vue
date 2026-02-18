@@ -10,23 +10,49 @@
           
           <div class="card-body p-4">
             <!-- Client Data Section -->
-            <div class="mb-4 p-3 bg-light rounded">
-              <h5 class="mb-3"><i class="bi bi-person-fill me-2"></i>Datos del Cliente</h5>
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <label class="form-label fw-bold small">Nombre del Cliente</label>
-                  <input type="text" class="form-control" v-model="clientName" placeholder="Nombre y apellidos">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label fw-bold small">Teléfono</label>
-                  <input type="tel" class="form-control" v-model="clientPhone" placeholder="Nº de teléfono">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label fw-bold small">Fecha de Recogida</label>
-                  <input type="date" class="form-control" v-model="pickupDate">
-                </div>
-              </div>
-            </div>
+    <div class="mb-4 p-3 bg-light rounded">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0"><i class="bi bi-person-fill me-2"></i>Datos del Cliente</h5>
+        <button v-if="hasClientData && !isEditingClientData" class="btn btn-sm btn-outline-primary" @click="isEditingClientData = true">
+          <i class="bi bi-pencil"></i> Editar
+        </button>
+      </div>
+
+      <!-- Summary Mode -->
+      <div v-if="hasClientData && !isEditingClientData" class="row g-3">
+        <div class="col-md-4">
+          <small class="text-muted d-block">Nombre</small>
+          <span class="fw-bold">{{ clientName }}</span>
+        </div>
+        <div class="col-md-4">
+          <small class="text-muted d-block">Teléfono</small>
+          <span class="fw-bold">{{ clientPhone }}</span>
+        </div>
+        <div class="col-md-4">
+          <small class="text-muted d-block">Fecha de Recogida</small>
+          <span class="fw-bold">{{ pickupDate }}</span>
+        </div>
+      </div>
+
+      <!-- Edit Mode -->
+      <div v-else class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label fw-bold small">Nombre del Cliente</label>
+          <input type="text" class="form-control" v-model="clientName" placeholder="Nombre y apellidos">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-bold small">Teléfono</label>
+          <input type="tel" class="form-control" v-model="clientPhone" placeholder="Nº de teléfono">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-bold small">Fecha de Recogida</label>
+          <input type="date" class="form-control" v-model="pickupDate">
+        </div>
+        <div class="col-12 text-end" v-if="hasClientData">
+           <button class="btn btn-sm btn-secondary" @click="isEditingClientData = false">Listo</button>
+        </div>
+      </div>
+      </div>
 
             <!-- Voice Control Area -->
             <div class="text-center mb-4">
@@ -178,6 +204,9 @@ const pickupDate = ref('')
 const isValidOrder = computed(() => {
   return voiceStore.recognizedItems.length > 0 && voiceStore.recognizedItems.every(item => item.productId)
 })
+
+const isEditingClientData = ref(false)
+const hasClientData = computed(() => !!(clientName.value || clientPhone.value || pickupDate.value))
 
 async function processTranscript() {
   if (!voiceStore.transcript) return
