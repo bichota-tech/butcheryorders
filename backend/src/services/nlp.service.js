@@ -51,10 +51,29 @@ export const extractOrderIntent = (transcript) => {
         }
     }
 
+    // Quantity word map (shared)
+    const quantityMap = {
+        medio: 0.5,
+        media: 0.5,
+        un: 1,
+        una: 1,
+        dos: 2,
+        tres: 3,
+        cuatro: 4,
+        cinco: 5,
+        seis: 6,
+        siete: 7,
+        ocho: 8,
+        nueve: 9,
+        diez: 10
+    }
+
+    const wordQuantities = Object.keys(quantityMap).join('|')
+
     // Product patterns - applied to each segment independently
     const productPatterns = [
         {
-            // "2 kilos de carne roja", "3 kg de pollo"
+            // "2 kilos de carne roja", "3 kg de pollo", "1,5 kilos de ternera"
             regex: /(\d+(?:[.,]\d+)?)\s*(kilos?|kg)\s+(?:de\s+)?([a-záéíóúñ\s]+)/i,
             extract: (match) => ({
                 quantity: parseFloat(match[1].replace(',', '.')),
@@ -63,7 +82,7 @@ export const extractOrderIntent = (transcript) => {
             })
         },
         {
-            // "5 unidades de chorizo", "2 units de salchichas"
+            // "5 unidades de chorizo", "2 unidades de salchichas"
             regex: /(\d+)\s*(unidades?|units?)\s+(?:de\s+)?([a-záéíóúñ\s]+)/i,
             extract: (match) => ({
                 quantity: parseInt(match[1]),
@@ -72,24 +91,22 @@ export const extractOrderIntent = (transcript) => {
             })
         },
         {
-            // "medio kilo de jamón", "un kilo de cerdo"
-            regex: /(medio|un|una|dos|tres|cuatro|cinco)\s+(kilos?|kg)\s+(?:de\s+)?([a-záéíóúñ\s]+)/i,
-            extract: (match) => {
-                const quantityMap = {
-                    medio: 0.5,
-                    un: 1,
-                    una: 1,
-                    dos: 2,
-                    tres: 3,
-                    cuatro: 4,
-                    cinco: 5
-                }
-                return {
-                    quantity: quantityMap[match[1]] || 1,
-                    unit: 'kg',
-                    product: match[3].trim()
-                }
-            }
+            // "medio kilo de jamón", "un kilo de cerdo", "tres kilos de ternera"
+            regex: new RegExp(`(${wordQuantities})\\s+(kilos?|kg)\\s+(?:de\\s+)?([a-záéíóúñ\\s]+)`, 'i'),
+            extract: (match) => ({
+                quantity: quantityMap[match[1].toLowerCase()] || 1,
+                unit: 'kg',
+                product: match[3].trim()
+            })
+        },
+        {
+            // "tres unidades de chorizo", "una unidad de hamburguesa", "dos unidades de croquetas"
+            regex: new RegExp(`(${wordQuantities})\\s+(unidades?|units?)\\s+(?:de\\s+)?([a-záéíóúñ\\s]+)`, 'i'),
+            extract: (match) => ({
+                quantity: quantityMap[match[1].toLowerCase()] || 1,
+                unit: 'units',
+                product: match[3].trim()
+            })
         }
     ]
 
@@ -152,7 +169,9 @@ export const matchProductNames = async (extractedItems, products) => {
                 // Handle common variations
                 (productName.includes('carne') && pName.includes('carne')) ||
                 (productName.includes('pollo') && pName.includes('pollo')) ||
-                (productName.includes('cerdo') && pName.includes('cerdo'))
+                (productName.includes('cerdo') && pName.includes('cerdo')) ||
+                (productName.includes('jamón') && pName.includes('jamón')) ||
+                (productName.includes('jamon') && pName.includes('jamón'))
             )
         })
 

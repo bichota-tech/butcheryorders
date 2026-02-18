@@ -2,7 +2,7 @@ import prisma from '../config/database.js'
 import logger from '../utils/logger.js'
 
 export const createOrder = async (userId, orderData) => {
-    const { items, transcript, voiceRecordingUrl } = orderData
+    const { items, transcript, voiceRecordingUrl, clientName, clientPhone, pickupDate } = orderData
 
     // Calculate total amount
     let totalAmount = 0
@@ -37,6 +37,9 @@ export const createOrder = async (userId, orderData) => {
             totalAmount,
             transcript,
             voiceRecordingUrl,
+            clientName: clientName || null,
+            clientPhone: clientPhone || null,
+            pickupDate: pickupDate ? new Date(pickupDate) : null,
             status: 'PENDING',
             items: {
                 create: orderItems
@@ -62,15 +65,16 @@ export const getUserOrders = async (userId, page = 1, limit = 10, filters = {}) 
 
     const where = { userId }
 
-    // Date filtering
+    // Date filtering - parse as local dates to avoid timezone issues
     if (startDate || endDate) {
         where.createdAt = {}
-        if (startDate) where.createdAt.gte = new Date(startDate)
+        if (startDate) {
+            const [y, m, d] = startDate.split('-').map(Number)
+            where.createdAt.gte = new Date(y, m - 1, d, 0, 0, 0, 0)
+        }
         if (endDate) {
-            // Set to end of day (23:59:59.999) to include all orders on that date
-            const end = new Date(endDate)
-            end.setHours(23, 59, 59, 999)
-            where.createdAt.lte = end
+            const [y, m, d] = endDate.split('-').map(Number)
+            where.createdAt.lte = new Date(y, m - 1, d, 23, 59, 59, 999)
         }
     }
 

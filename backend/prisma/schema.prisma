@@ -31,6 +31,9 @@ model Order {
   user              User        @relation(fields: [userId], references: [id])
   status            OrderStatus @default(PENDING)
   totalAmount       Decimal     @db.Decimal(10, 2)
+  clientName        String?
+  clientPhone       String?
+  pickupDate        DateTime?
   voiceRecordingUrl String?
   transcript        String?
   createdAt         DateTime    @default(now())

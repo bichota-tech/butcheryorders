@@ -19,6 +19,25 @@
       </div>
 
       <div class="card-body p-4 overflow-auto">
+        <!-- Client Info -->
+        <div class="mb-4 p-3 bg-light rounded" v-if="ordersStore.currentOrder.clientName || ordersStore.currentOrder.clientPhone">
+          <h6 class="fw-bold mb-2"><i class="bi bi-person-fill me-1"></i> Datos del Cliente</h6>
+          <div class="row g-2">
+            <div class="col-6" v-if="ordersStore.currentOrder.clientName">
+              <small class="text-muted d-block">Nombre</small>
+              <span class="fw-bold">{{ ordersStore.currentOrder.clientName }}</span>
+            </div>
+            <div class="col-6" v-if="ordersStore.currentOrder.clientPhone">
+              <small class="text-muted d-block">Teléfono</small>
+              <span class="fw-bold">{{ ordersStore.currentOrder.clientPhone }}</span>
+            </div>
+            <div class="col-6" v-if="ordersStore.currentOrder.pickupDate">
+              <small class="text-muted d-block">Fecha de Recogida</small>
+              <span class="fw-bold">{{ formatPickupDate(ordersStore.currentOrder.pickupDate) }}</span>
+            </div>
+          </div>
+        </div>
+
         <h5 class="mb-3">Productos</h5>
         <div class="table-responsive">
           <table class="table table-hover align-middle">
@@ -124,7 +143,13 @@ function formatStatus(status) {
 }
 
 function formatDate(dateString) {
-  return new Date(dateString).toLocaleString()
+  return new Date(dateString).toLocaleString('es-ES')
+}
+
+function formatPickupDate(dateString) {
+  return new Date(dateString).toLocaleDateString('es-ES', {
+    day: '2-digit', month: '2-digit', year: 'numeric'
+  })
 }
 </script>
 
