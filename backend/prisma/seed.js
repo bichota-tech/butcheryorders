@@ -49,7 +49,9 @@ async function main() {
         { name: 'Rollos de Ternera', category: 'Prepared', unit: 'kg', pricePerUnit: 15.00 },
         { name: 'Rollos de Cerdo', category: 'Prepared', unit: 'kg', pricePerUnit: 12.00 },
         { name: 'Rollos de Pollo', category: 'Prepared', unit: 'kg', pricePerUnit: 11.00 },
-        { name: 'Pollo Relleno', category: 'Prepared', unit: 'kg', pricePerUnit: 10.50 }
+        { name: 'Pollo Relleno', category: 'Prepared', unit: 'kg', pricePerUnit: 10.50 },
+        { name: 'Jamón Ibérico', category: 'Embutidos', unit: 'kg', pricePerUnit: 0 },
+        { name: 'Jamón Serrano', category: 'Embutidos', unit: 'kg', pricePerUnit: 0 }
     ]
 
     for (const product of products) {

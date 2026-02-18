@@ -10,9 +10,11 @@ export const extractOrderIntent = (transcript) => {
 
     logger.info('Processing transcript', { transcript: text })
 
-    // Pattern matching for common Spanish phrases
-    const patterns = [
-        // COMMANDS
+    // Split by "y" or "," to handle multiple items
+    const segments = text.split(/\s+y\s+|,\s*/).map(s => s.trim()).filter(Boolean)
+
+    // Command patterns (check on full text, not segments)
+    const commandPatterns = [
         {
             regex: /ver\s+pedidos\s+de\s+(hoy|ayer|esta\s+semana)/i,
             extract: (match) => ({ command: 'filter_date', value: match[1].toLowerCase() })
@@ -24,11 +26,36 @@ export const extractOrderIntent = (transcript) => {
         {
             regex: /exportar\s+(?:a\s+)?excel/i,
             extract: () => ({ command: 'export_excel' })
-        },
-        // PRODUCT PATTERNS
+        }
+    ]
+
+    // Check for commands first on the full text
+    for (const pattern of commandPatterns) {
+        const match = pattern.regex.exec(text)
+        if (match) {
+            const item = pattern.extract(match)
+            items.push(item)
+        }
+    }
+
+    // If we found commands, return early
+    const commands = items.filter(i => i.command)
+    if (commands.length > 0) {
+        logger.info('Intent extraction complete', { intent: 'command', commandCount: commands.length })
+        return {
+            intent: 'command',
+            items: [],
+            commands,
+            confidence: 0.8,
+            originalTranscript: transcript
+        }
+    }
+
+    // Product patterns - applied to each segment independently
+    const productPatterns = [
         {
             // "2 kilos de carne roja", "3 kg de pollo"
-            regex: /(\d+(?:[.,]\d+)?)\s*(kilos?|kg)\s+(?:de\s+)?([a-záéíóúñ\s]+?)(?=\s+y\s+|\s*$|,)/gi,
+            regex: /(\d+(?:[.,]\d+)?)\s*(kilos?|kg)\s+(?:de\s+)?([a-záéíóúñ\s]+)/i,
             extract: (match) => ({
                 quantity: parseFloat(match[1].replace(',', '.')),
                 unit: 'kg',
@@ -37,7 +64,7 @@ export const extractOrderIntent = (transcript) => {
         },
         {
             // "5 unidades de chorizo", "2 units de salchichas"
-            regex: /(\d+)\s*(unidades?|units?)\s+(?:de\s+)?([a-záéíóúñ\s]+?)(?=\s+y\s+|\s*$|,)/gi,
+            regex: /(\d+)\s*(unidades?|units?)\s+(?:de\s+)?([a-záéíóúñ\s]+)/i,
             extract: (match) => ({
                 quantity: parseInt(match[1]),
                 unit: 'units',
@@ -46,7 +73,7 @@ export const extractOrderIntent = (transcript) => {
         },
         {
             // "medio kilo de jamón", "un kilo de cerdo"
-            regex: /(medio|un|una|dos|tres|cuatro|cinco)\s+(kilos?|kg)\s+(?:de\s+)?([a-záéíóúñ\s]+?)(?=\s+y\s+|\s*$|,)/gi,
+            regex: /(medio|un|una|dos|tres|cuatro|cinco)\s+(kilos?|kg)\s+(?:de\s+)?([a-záéíóúñ\s]+)/i,
             extract: (match) => {
                 const quantityMap = {
                     medio: 0.5,
@@ -66,42 +93,41 @@ export const extractOrderIntent = (transcript) => {
         }
     ]
 
-    // Apply all patterns
-    patterns.forEach((pattern) => {
-        let match
-        const regex = new RegExp(pattern.regex)
-        while ((match = regex.exec(text)) !== null) {
-            try {
-                const item = pattern.extract(match)
-                if (item.product && item.quantity > 0) {
-                    items.push(item)
-                    logger.debug('Extracted item', item)
+    // Process each segment independently
+    for (const segment of segments) {
+        let matched = false
+        for (const pattern of productPatterns) {
+            const match = pattern.regex.exec(segment)
+            if (match) {
+                try {
+                    const item = pattern.extract(match)
+                    if (item.product && item.quantity > 0) {
+                        items.push(item)
+                        logger.debug('Extracted item', item)
+                        matched = true
+                        break // One match per segment is enough
+                    }
+                } catch (error) {
+                    logger.warn('Failed to extract item from match', { match, error: error.message })
                 }
-            } catch (error) {
-                logger.warn('Failed to extract item from match', { match, error: error.message })
             }
         }
-    })
-
-    // Determine intent
-    const commands = items.filter(i => i.command)
-    const orderItems = items.filter(i => !i.command)
-
-    let intent = 'unknown'
-    if (commands.length > 0) {
-        intent = 'command'
-    } else if (orderItems.length > 0) {
-        intent = 'create_order'
+        if (!matched) {
+            logger.debug('No pattern matched for segment', { segment })
+        }
     }
 
-    const confidence = (commands.length > 0 || orderItems.length > 0) ? 0.8 : 0.3
+    const orderItems = items.filter(i => !i.command)
 
-    logger.info('Intent extraction complete', { intent, commandCount: commands.length, itemCount: orderItems.length, confidence })
+    const intent = orderItems.length > 0 ? 'create_order' : 'unknown'
+    const confidence = orderItems.length > 0 ? 0.8 : 0.3
+
+    logger.info('Intent extraction complete', { intent, itemCount: orderItems.length, confidence })
 
     return {
         intent,
         items: orderItems,
-        commands,
+        commands: [],
         confidence,
         originalTranscript: transcript
     }

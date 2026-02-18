@@ -66,7 +66,12 @@ export const getUserOrders = async (userId, page = 1, limit = 10, filters = {}) 
     if (startDate || endDate) {
         where.createdAt = {}
         if (startDate) where.createdAt.gte = new Date(startDate)
-        if (endDate) where.createdAt.lte = new Date(endDate)
+        if (endDate) {
+            // Set to end of day (23:59:59.999) to include all orders on that date
+            const end = new Date(endDate)
+            end.setHours(23, 59, 59, 999)
+            where.createdAt.lte = end
+        }
     }
 
     // Status filtering
