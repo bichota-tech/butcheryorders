@@ -9,6 +9,25 @@
           </div>
           
           <div class="card-body p-4">
+            <!-- Client Data Section -->
+            <div class="mb-4 p-3 bg-light rounded">
+              <h5 class="mb-3"><i class="bi bi-person-fill me-2"></i>Datos del Cliente</h5>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold small">Nombre del Cliente</label>
+                  <input type="text" class="form-control" v-model="clientName" placeholder="Nombre y apellidos">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold small">Teléfono</label>
+                  <input type="tel" class="form-control" v-model="clientPhone" placeholder="Nº de teléfono">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold small">Fecha de Recogida</label>
+                  <input type="date" class="form-control" v-model="pickupDate">
+                </div>
+              </div>
+            </div>
+
             <!-- Voice Control Area -->
             <div class="text-center mb-4">
               <button 
@@ -21,7 +40,7 @@
                 <i class="bi fs-1" :class="voiceStore.isRecording ? 'bi-stop-fill' : 'bi-mic-fill'"></i>
               </button>
               <p class="text-muted">
-                {{ voiceStore.isRecording ? 'Escuchando... (Di tu pedido)' : 'Pulsa para hablar' }}
+                {{ voiceStore.isRecording ? 'Escuchando... (Di el pedido del cliente)' : 'Pulsa para dictar el pedido' }}
               </p>
               
               <div v-if="voiceStore.error" class="alert alert-danger mt-3">
@@ -109,6 +128,7 @@
               <li class="list-group-item bg-transparent">"Quiero 2 kilos de carne picada"</li>
               <li class="list-group-item bg-transparent">"Medio kilo de jamón y 3 unidades de chorizo"</li>
               <li class="list-group-item bg-transparent">"Un kilo de cinta de lomo"</li>
+              <li class="list-group-item bg-transparent">"Tres unidades de hamburguesas"</li>
             </ul>
           </div>
         </div>
@@ -146,6 +166,11 @@ const { startRecording, stopRecording, toggleRecording } = useVoiceRecording()
 const isProcessing = ref(false)
 const showSuccessToast = ref(false)
 
+// Client data fields
+const clientName = ref('')
+const clientPhone = ref('')
+const pickupDate = ref('')
+
 const isValidOrder = computed(() => {
   return voiceStore.recognizedItems.length > 0 && voiceStore.recognizedItems.every(item => item.productId)
 })
@@ -173,7 +198,10 @@ async function confirmOrder() {
   try {
     const orderData = {
       items: voiceStore.recognizedItems,
-      transcript: voiceStore.transcript
+      transcript: voiceStore.transcript,
+      clientName: clientName.value || null,
+      clientPhone: clientPhone.value || null,
+      pickupDate: pickupDate.value || null
     }
     
     await ordersStore.createOrder(orderData)
@@ -194,6 +222,9 @@ async function confirmOrder() {
 
 function resetSession() {
   voiceStore.reset()
+  clientName.value = ''
+  clientPhone.value = ''
+  pickupDate.value = ''
 }
 </script>
 
