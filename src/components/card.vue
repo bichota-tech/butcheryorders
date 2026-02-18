@@ -50,7 +50,12 @@
             </thead>
             <tbody>
               <tr v-for="item in ordersStore.currentOrder.items" :key="item.id">
-                <td>{{ item.product?.name || 'Producto desconocido' }}</td>
+                <td>
+                  {{ item.product?.name || 'Producto desconocido' }}
+                  <div v-if="item.notes" class="text-muted small fst-italic">
+                    <i class="bi bi-info-circle me-1"></i>{{ item.notes }}
+                  </div>
+                </td>
                 <td class="text-center">{{ item.quantity }}</td>
                 <td class="text-center">{{ item.unit }}</td>
               </tr>
