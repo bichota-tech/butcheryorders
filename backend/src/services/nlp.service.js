@@ -164,34 +164,62 @@ export const extractOrderIntent = (transcript) => {
 export const matchProductNames = async (extractedItems, products) => {
     const matchedItems = []
 
+    // 1. Sort products by name length descending to match longest possible name first
+    // "filetes de ternera" should match before "ternera"
+    const sortedProducts = [...products].sort((a, b) => b.name.length - a.name.length)
+
     for (const item of extractedItems) {
-        const productName = item.product.toLowerCase()
+        let productName = item.product.toLowerCase()
+        let matchedProduct = null
+        let notes = ''
 
-        // Find best match in product catalog
-        const match = products.find((p) => {
+        // Try to find a product name that matches the start of the extracted text
+        for (const p of sortedProducts) {
             const pName = p.name.toLowerCase()
-            return (
-                pName === productName ||
-                pName.includes(productName) ||
-                productName.includes(pName) ||
-                // Handle common variations
-                (productName.includes('carne') && pName.includes('carne')) ||
-                (productName.includes('pollo') && pName.includes('pollo')) ||
-                (productName.includes('cerdo') && pName.includes('cerdo')) ||
-                (productName.includes('jamón') && pName.includes('jamón')) ||
-                (productName.includes('jamon') && pName.includes('jamón'))
-            )
-        })
 
-        if (match) {
+            // Check if extracted text starts with product name
+            // Allow for plural variations or exact match
+            if (productName === pName || productName.startsWith(pName + ' ')) {
+                matchedProduct = p
+                // specificities are what remains
+                notes = productName.slice(pName.length).trim()
+                // cleanup notes (remove leading 'de', etc if needed)
+                if (notes.startsWith('de ')) notes = notes.slice(3).trim()
+                if (notes.startsWith(',')) notes = notes.slice(1).trim()
+                break
+            }
+        }
+
+        if (!matchedProduct) {
+            // Fallback to inclusion search if no prefix match
+            matchedProduct = sortedProducts.find(p => {
+                const pName = p.name.toLowerCase()
+                return productName.includes(pName)
+            })
+            if (matchedProduct) {
+                // matched but not at start? strange but possible
+                // Let's assume the whole text is product + notes
+                // We'll keep original as notes for safety if we can't cleanly split
+                if (productName !== matchedProduct.name.toLowerCase()) {
+                    notes = productName.replace(matchedProduct.name.toLowerCase(), '').trim()
+                }
+            }
+        }
+
+        if (matchedProduct) {
             matchedItems.push({
-                productId: match.id,
-                productName: match.name,
+                productId: matchedProduct.id,
+                productName: matchedProduct.name,
                 quantity: item.quantity,
                 unit: item.unit,
+                notes: notes || null,
                 confidence: 0.9
             })
-            logger.debug('Matched product', { extracted: item.product, matched: match.name })
+            logger.debug('Matched product', {
+                extracted: item.product,
+                matched: matchedProduct.name,
+                notes: notes
+            })
         } else {
             logger.warn('No product match found', { product: item.product })
             matchedItems.push({
@@ -199,6 +227,7 @@ export const matchProductNames = async (extractedItems, products) => {
                 productName: item.product,
                 quantity: item.quantity,
                 unit: item.unit,
+                notes: null,
                 confidence: 0.3,
                 needsManualReview: true
             })

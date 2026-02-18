@@ -26,6 +26,7 @@ export const createOrder = async (userId, orderData) => {
             productId: item.productId,
             quantity: item.quantity,
             unit: item.unit,
+            notes: item.notes,
             priceAtTime: product.pricePerUnit
         })
     }

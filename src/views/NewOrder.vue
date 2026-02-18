@@ -80,6 +80,7 @@
                       <th>Producto</th>
                       <th>Cantidad</th>
                       <th>Unidad</th>
+                      <th>Notas</th>
                       <th>Estado</th>
                       <th>Acción</th>
                     </tr>
@@ -92,6 +93,9 @@
                       </td>
                       <td>{{ item.quantity }}</td>
                       <td>{{ item.unit }}</td>
+                      <td>
+                        <input type="text" class="form-control form-control-sm" v-model="item.notes" placeholder="Detalles...">
+                      </td>
                       <td>
                         <i v-if="item.productId" class="bi bi-check-circle-fill text-success"></i>
                         <i v-else class="bi bi-exclamation-triangle-fill text-warning"></i>
@@ -204,6 +208,12 @@ async function processTranscript() {
 
 async function confirmOrder() {
   if (!isValidOrder.value) return
+
+  // Validate client data
+  if (!clientName.value || !clientPhone.value || !pickupDate.value) {
+    alert('⚠️ Faltan datos obligatorios del cliente (Nombre, Teléfono o Fecha de Recogida).\nPor favor, complétalos antes de confirmar.')
+    return
+  }
 
   try {
     const orderData = {
