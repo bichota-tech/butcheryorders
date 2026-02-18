@@ -168,25 +168,36 @@ export const matchProductNames = async (extractedItems, products) => {
     // "filetes de ternera" should match before "ternera"
     const sortedProducts = [...products].sort((a, b) => b.name.length - a.name.length)
 
+    let lastMatchedProduct = null
+
     for (const item of extractedItems) {
         let productName = item.product.toLowerCase()
         let matchedProduct = null
         let notes = ''
 
-        // Try to find a product name that matches the start of the extracted text
-        for (const p of sortedProducts) {
-            const pName = p.name.toLowerCase()
+        // 0. Check for context reference ("otra", "otro")
+        // "una pechuga en filetes y otra en trozos"
+        if (lastMatchedProduct && (productName.startsWith('otr') || productName.startsWith('y otr'))) {
+            matchedProduct = lastMatchedProduct
+            // Remove "otra" text to get notes
+            // "otra en trozos" -> "en trozos"
+            notes = productName.replace(/^(?:y\s+)?otr[ao]s?\s+/, '').trim()
+        } else {
+            // Try to find a product name that matches the start of the extracted text
+            for (const p of sortedProducts) {
+                const pName = p.name.toLowerCase()
 
-            // Check if extracted text starts with product name
-            // Allow for plural variations or exact match
-            if (productName === pName || productName.startsWith(pName + ' ')) {
-                matchedProduct = p
-                // specificities are what remains
-                notes = productName.slice(pName.length).trim()
-                // cleanup notes (remove leading 'de', etc if needed)
-                if (notes.startsWith('de ')) notes = notes.slice(3).trim()
-                if (notes.startsWith(',')) notes = notes.slice(1).trim()
-                break
+                // Check if extracted text starts with product name
+                // Allow for plural variations or exact match
+                if (productName === pName || productName.startsWith(pName + ' ')) {
+                    matchedProduct = p
+                    // specificities are what remains
+                    notes = productName.slice(pName.length).trim()
+                    // cleanup notes (remove leading 'de', etc if needed)
+                    if (notes.startsWith('de ')) notes = notes.slice(3).trim()
+                    if (notes.startsWith(',')) notes = notes.slice(1).trim()
+                    break
+                }
             }
         }
 
@@ -207,6 +218,7 @@ export const matchProductNames = async (extractedItems, products) => {
         }
 
         if (matchedProduct) {
+            lastMatchedProduct = matchedProduct // Update context
             matchedItems.push({
                 productId: matchedProduct.id,
                 productName: matchedProduct.name,
