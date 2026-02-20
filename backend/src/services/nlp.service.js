@@ -1,5 +1,5 @@
 import logger from '../utils/logger.js'
-import { extractClientInfo } from '../utils/nlp.utils.js'
+import { extractClientInfo, segmentTranscript } from '../utils/nlp.utils.js'
 
 /**
  * Extract order intent and items from voice transcript
@@ -11,8 +11,14 @@ export const extractOrderIntent = (transcript) => {
 
     logger.info('Processing transcript', { transcript: text })
 
-    // Split by "y" or "," to handle multiple items
-    const segments = text.split(/\s+y\s+|,\s*/).map(s => s.trim()).filter(Boolean)
+    // ── Isolate product list from client header ───────────────────────────────
+    // Use segmentTranscript to find where the product list starts.
+    // If no structured header is detected, treat the whole text as product list.
+    const segments_meta = segmentTranscript(transcript)
+    const productText = segments_meta.productListText || text
+
+    // Split product list by "y" or "," to handle multiple items
+    const segments = productText.split(/\s+y\s+|,\s*/).map(s => s.trim()).filter(Boolean)
 
     // Command patterns (check on full text, not segments)
     const commandPatterns = [
@@ -83,12 +89,30 @@ export const extractOrderIntent = (transcript) => {
             })
         },
         {
+            // "500 gramos de carne picada", "250g de lomo"
+            regex: /(\d+(?:[.,]\d+)?)\s*(gramos?|gr?)\s+(?:de\s+)?([a-záéíóúñ\s]+)/i,
+            extract: (match) => ({
+                quantity: parseFloat(match[1].replace(',', '.')) / 1000, // convert to kg
+                unit: 'kg',
+                product: match[3].trim()
+            })
+        },
+        {
             // "5 unidades de chorizo", "2 unidades de salchichas"
             regex: /(\d+)\s*(unidades?|units?)\s+(?:de\s+)?([a-záéíóúñ\s]+)/i,
             extract: (match) => ({
                 quantity: parseInt(match[1]),
                 unit: 'units',
                 product: match[3].trim()
+            })
+        },
+        {
+            // "1 cachopo grande", "2 entrecots" — bare digit + product name (no unit keyword)
+            regex: /(\d+)\s+(?!kilos?|kg|gramos?|gr?|unidades?|units?|de\s)([a-záéíóúñ][a-záéíóúñ\s]+)/i,
+            extract: (match) => ({
+                quantity: parseInt(match[1]),
+                unit: 'units',
+                product: match[2].trim()
             })
         },
         {
@@ -101,12 +125,30 @@ export const extractOrderIntent = (transcript) => {
             })
         },
         {
+            // "quinientos gramos de...", "doscientos cincuenta gramos"
+            regex: new RegExp(`(${wordQuantities})\\s+(gramos?|gr?)\\s+(?:de\\s+)?([a-záéíóúñ\\s]+)`, 'i'),
+            extract: (match) => ({
+                quantity: (quantityMap[match[1].toLowerCase()] || 1) / 1000,
+                unit: 'kg',
+                product: match[3].trim()
+            })
+        },
+        {
             // "tres unidades de chorizo", "una unidad de hamburguesa", "dos unidades de croquetas"
             regex: new RegExp(`(${wordQuantities})\\s+(unidades?|units?)\\s+(?:de\\s+)?([a-záéíóúñ\\s]+)`, 'i'),
             extract: (match) => ({
                 quantity: quantityMap[match[1].toLowerCase()] || 1,
                 unit: 'units',
                 product: match[3].trim()
+            })
+        },
+        {
+            // "un cachopo", "una pechuga" — word quantity + bare product name
+            regex: new RegExp(`(${wordQuantities})\\s+(?!kilos?|kg|gramos?|gr?|unidades?|units?|de\\s)([a-záéíóúñ][a-záéíóúñ\\s]+)`, 'i'),
+            extract: (match) => ({
+                quantity: quantityMap[match[1].toLowerCase()] || 1,
+                unit: 'units',
+                product: match[2].trim()
             })
         }
     ]
@@ -120,6 +162,8 @@ export const extractOrderIntent = (transcript) => {
                 try {
                     const item = pattern.extract(match)
                     if (item.product && item.quantity > 0) {
+                        // Preserve the original spoken segment text for transcripcionOriginal
+                        item.transcripcionOriginal = segment
                         items.push(item)
                         logger.debug('Extracted item', item)
                         matched = true
@@ -225,6 +269,7 @@ export const matchProductNames = async (extractedItems, products) => {
                 quantity: item.quantity,
                 unit: item.unit,
                 notes: notes || null,
+                transcripcionOriginal: item.transcripcionOriginal || null,
                 confidence: 0.9
             })
             logger.debug('Matched product', {

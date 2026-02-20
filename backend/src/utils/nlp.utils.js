@@ -1,5 +1,6 @@
 /**
  * NLP Utilities for Spanish voice command parsing
+ * Handles: structured order dictation, date/phone/name extraction
  */
 
 const numberMap = {
@@ -20,125 +21,193 @@ const monthMap = {
 
 /**
  * Parses a spoken Spanish date string into YYYY-MM-DD
- * e.g. "diecinueve de febrero de 2026"
+ * Supports: "25 de febrero", "25 de febrero de 2026", "25/02", "25/02/2026"
  */
 export const parseSpanishDate = (text) => {
     try {
+        text = text.trim()
         const lower = text.toLowerCase()
 
         // Check for DD/MM/YYYY or DD-MM-YYYY
         const slashMatch = text.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{4}))?/)
         if (slashMatch) {
             const day = parseInt(slashMatch[1])
-            const month = parseInt(slashMatch[2]) - 1 // JS months are 0-11
+            const month = parseInt(slashMatch[2]) - 1
             const year = slashMatch[3] ? parseInt(slashMatch[3]) : new Date().getFullYear()
-
             const date = new Date(year, month, day)
-            const yyyy = date.getFullYear()
-            const mm = String(date.getMonth() + 1).padStart(2, '0')
-            const dd = String(date.getDate()).padStart(2, '0')
-            return `${yyyy}-${mm}-${dd}`
+            return formatDate(date)
         }
 
-        // Extract day
-        let day = null
-        // Check for "diecinueve" or digits "19"
-        const dayMatch = lower.match(/(?:el\s+)?([a-zñáéíóú]+|\d+)\s+de\s+([a-zñ]+)/)
-
+        // Spoken date: "diecinueve de febrero de 2026" / "25 de febrero"
+        // Match: (day word or digit) "de" (month word)
+        const dayMatch = lower.match(/(?:el\s+)?(\w[\w\s]*?)\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/)
         if (dayMatch) {
-            const dayStr = dayMatch[1]
-            const monthStr = dayMatch[2]
+            const dayStr = dayMatch[1].trim()
+            const monthStr = dayMatch[2].trim()
 
-            day = isNaN(dayStr) ? numberMap[dayStr] : parseInt(dayStr)
+            const day = isNaN(dayStr) ? numberMap[dayStr] : parseInt(dayStr)
             const month = monthMap[monthStr]
 
-            // Extract year (optional) - matches "de 2026" or "del 2026"
             let year = new Date().getFullYear()
-            const yearMatch = lower.match(/(?:del?|de)\s+(\d{4})/)
+            const yearMatch = lower.match(/de\s+(\d{4})/)
             if (yearMatch) {
                 year = parseInt(yearMatch[1])
-            } else {
-                // Handle year transition logic if needed (e.g. if order is for next year)
-                // For now defaults to current year
             }
 
             if (day && month !== undefined) {
-                // Create date (months are 0-indexed in JS Date)
-                // Note: We use local date construction
-                const date = new Date(year, month, day)
-                // Return YYYY-MM-DD
-                const yyyy = date.getFullYear()
-                const mm = String(date.getMonth() + 1).padStart(2, '0')
-                const dd = String(date.getDate()).padStart(2, '0')
-                return `${yyyy}-${mm}-${dd}`
+                return formatDate(new Date(year, month, day))
             }
         }
+
         return null
     } catch (e) {
         return null
     }
 }
 
-/**
- * Converts a sequence of number words or digits into a phone string
- * e.g. "cinco cinco cinco tres..." -> "5553..."
- */
-export const wordsToPhone = (text) => {
-    // Split by non-alphanumeric but keep digits
-    const words = text.toLowerCase().split(/[\s-]+/)
-    let phone = ''
-
-    for (const word of words) {
-        if (!isNaN(word)) {
-            phone += word
-        } else if (numberMap[word] !== undefined && numberMap[word] < 10) {
-            phone += numberMap[word]
-        }
-    }
-
-    return phone.length >= 9 ? phone : null
+function formatDate(date) {
+    const yyyy = date.getFullYear()
+    const mm = String(date.getMonth() + 1).padStart(2, '0')
+    const dd = String(date.getDate()).padStart(2, '0')
+    return `${yyyy}-${mm}-${dd}`
 }
 
 /**
- * Extracts client name, phone, and pickup date from transcript
+ * Converts a sequence of number words or digit groups into a phone string
+ * e.g. "seis ocho cuatro uno dos tres cuatro cinco seis" -> "684123456"
+ * e.g. "684 123 456" -> "684123456"
+ */
+export const wordsToPhone = (text) => {
+    const words = text.toLowerCase().trim().split(/[\s\-]+/)
+    let phone = ''
+
+    for (const word of words) {
+        // If it's a pure number token (e.g. "684" or "456"), add all digits
+        if (/^\d+$/.test(word)) {
+            phone += word
+        } else if (numberMap[word] !== undefined && numberMap[word] <= 9) {
+            // Single digits spoken as words: "seis" -> 6
+            phone += numberMap[word]
+        }
+        // Stop if we already have enough digits for a valid spanish phone
+        if (phone.length >= 12) break
+    }
+
+    return phone.length >= 9 ? phone.slice(0, 12) : null
+}
+
+/**
+ * Segments the full transcript into structured parts:
+ *   { header, dateText, phoneText, productListText }
+ *
+ * Expected format (flexible):
+ * "Pedido para $name, Fecha de recogida $date, teléfono $phone, $products..."
+ */
+export const segmentTranscript = (transcript) => {
+    const text = transcript.toLowerCase().trim()
+
+    const result = {
+        nameText: null,
+        dateText: null,
+        phoneText: null,
+        productListText: null,
+        rawText: text
+    }
+
+    // ── 1. Name ──────────────────────────────────────────────────────────────
+    // "Pedido para María González" or "nombre del cliente María"
+    const nameMatch = text.match(
+        /(?:pedido\s+para|nombre(?:\s+del)?\s+cliente)\s+([^,]+?)(?:\s*,|\s+(?:fecha|teléfono|tel[eé]fono|tlf|y\s+|$))/i
+    )
+    if (nameMatch) {
+        result.nameText = nameMatch[1].trim()
+    }
+
+    // ── 2. Date ───────────────────────────────────────────────────────────────
+    // "Fecha de recogida 25 de febrero" or "fecha 18/02"
+    const dateMatch = text.match(
+        /(?:fecha(?:\s+de)?\s+recogida|fecha)\s+([^,]+?)(?:\s*,|\s+(?:teléfono|tel[eé]fono|tlf|nombre|$))/i
+    )
+    if (dateMatch) {
+        result.dateText = dateMatch[1].trim()
+    }
+
+    // ── 3. Phone ──────────────────────────────────────────────────────────────
+    // "teléfono 684123456" — capture everything until the next comma or end
+    const phoneMatch = text.match(
+        /(?:tel[eé]fonos?|tlf|móvil)\s+([^,]+?)(?:\s*,|$)/i
+    )
+    if (phoneMatch) {
+        result.phoneText = phoneMatch[1].trim()
+    }
+
+    // ── 4. Product list ───────────────────────────────────────────────────────
+    // Everything after the last of (phone / fecha / nombre) sections
+    // Strategy: find the last comma that separates header from product list
+    // The product list comes after all metadata fields.
+    // We detect it by checking position after the last matched keyword.
+
+    let productStart = -1
+    const anchors = [
+        /(?:tel[eé]fonos?|tlf|móvil)\s+[\d\w\s]+/i,  // after phone number
+    ]
+    for (const anchor of anchors) {
+        const m = anchor.exec(text)
+        if (m) {
+            const end = m.index + m[0].length
+            if (end > productStart) productStart = end
+        }
+    }
+
+    // If we found an end of the header section, the rest is products
+    if (productStart !== -1) {
+        // Skip the comma/space after the header
+        let rest = text.slice(productStart).replace(/^[\s,]+/, '').trim()
+        if (rest.length > 0) {
+            result.productListText = rest
+        }
+    }
+
+    return result
+}
+
+
+/**
+ * Extracts client name, phone, and pickup date from a structured transcript.
+ * Uses segmentTranscript to correctly parse "Pedido para X, Fecha Y, Teléfono Z, products..."
  */
 export const extractClientInfo = (transcript) => {
-    const text = transcript.toLowerCase()
     const result = {}
 
-    // 1. Extract Pickup Date
-    // Look for pattern "fecha (de) (recogida) value" until next keyword
-    const dateRegex = /(?:fecha|recogida)(?:\s+de)?(?:\s+recogida)?\s+(.+?)(?=\s+(?:teléfono|tlf|nombre|cliente|productos?|quiero|$))/i
-    const dateMatch = text.match(dateRegex)
-    if (dateMatch) {
-        const possibleDate = dateMatch[1]
-        const parsedDate = parseSpanishDate(possibleDate)
-        if (parsedDate) {
-            result.pickupDate = parsedDate
-        }
-    }
+    try {
+        const segments = segmentTranscript(transcript)
 
-    // 2. Extract Phone
-    const phoneRegex = /(?:teléfono|tlf|móvil)(?:\s+de)?(?:\s+contacto)?\s+(.+?)(?=\s+(?:fecha|recogida|nombre|cliente|productos?|quiero|$))/i
-    const phoneMatch = text.match(phoneRegex)
-    if (phoneMatch) {
-        const possiblePhone = phoneMatch[1]
-        const parsedPhone = wordsToPhone(possiblePhone)
-        if (parsedPhone) {
-            result.clientPhone = parsedPhone
+        // Name
+        if (segments.nameText) {
+            result.clientName = segments.nameText
+                .split(' ')
+                .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                .join(' ')
+                .trim()
         }
-    }
 
-    // 3. Extract Name
-    const nameRegex = /(?:nombre|cliente)(?:\s+del)?(?:\s+cliente)?\s+(.+?)(?=\s+(?:teléfono|tlf|fecha|recogida|productos?|quiero|$))/i
-    const nameMatch = text.match(nameRegex)
-    if (nameMatch) {
-        // Capitalize first letters
-        result.clientName = nameMatch[1]
-            .split(' ')
-            .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-            .join(' ')
-            .trim()
+        // Date
+        if (segments.dateText) {
+            const parsedDate = parseSpanishDate(segments.dateText)
+            if (parsedDate) {
+                result.pickupDate = parsedDate
+            }
+        }
+
+        // Phone
+        if (segments.phoneText) {
+            const parsedPhone = wordsToPhone(segments.phoneText)
+            if (parsedPhone) {
+                result.clientPhone = parsedPhone
+            }
+        }
+    } catch (e) {
+        // Fallback: return whatever we got
     }
 
     return result
