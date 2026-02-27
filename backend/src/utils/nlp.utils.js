@@ -92,9 +92,11 @@ function formatDate(date) {
     return `${yyyy}-${mm}-${dd}`
 }
 
-/** Gets digits contributed by a single token. "seis"→"6", "doce"→"12", "684"→"684", other→null */
+/** Gets digits contributed by a single token. "seis"→"6", "doce"→"12", "684"→"684", "69876-54"→"6987654", other→null */
 export function tokenToDigits(token) {
-    if (/^\d+$/.test(token)) return token
+    // Strip hyphens — phone groups like "69876-54" should contribute all their digits
+    const clean = token.replace(/-/g, '')
+    if (/^\d+$/.test(clean)) return clean
     if (numberMap[token] !== undefined) return String(numberMap[token])
     return null
 }

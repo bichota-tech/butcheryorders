@@ -12,10 +12,19 @@ export const extractOrderIntent = (transcript) => {
     logger.info('Processing transcript', { transcript: text })
 
     // ── Isolate product list from client header ───────────────────────────────
-    // Use segmentTranscript to find where the product list starts.
-    // If no structured header is detected, treat the whole text as product list.
     const segments_meta = segmentTranscript(transcript)
-    const productText = segments_meta.productListText || text
+    let productText = segments_meta.productListText || text
+
+    // ── Text normalization ────────────────────────────────────────────────────
+    // 1. Add space between digit and unit letter (e.g. "500g" → "500 g", "2kg" → "2 kg")
+    productText = productText.replace(/(\d+)(kg|gr?|g)(?=\s|de\s|$)/gi, '$1 $2')
+    // 2. STT error corrections (common speech-to-text mistakes)
+    const STT_CORRECTIONS = [
+        [/\bcon\s+pango\b/gi, 'compango'],
+        [/\bpon\s+pango\b/gi, 'compango'],
+        [/\bcon\s+pan\s+go\b/gi, 'compango'],
+    ]
+    for (const [pattern, fix] of STT_CORRECTIONS) productText = productText.replace(pattern, fix)
 
     // Split product list by:
     // 1. "y" or ","
@@ -155,13 +164,25 @@ export const extractOrderIntent = (transcript) => {
             })
         },
         {
-            // "un cachopo", "una pechuga" — word quantity + bare product name
-            regex: new RegExp(`(${wordQuantities})\\s+(?!kilos?|kg|gramos?|gr?|unidades?|units?|de\\s)([a-záéíóúñ][a-záéíóúñ\\s]+)`, 'i'),
+            // "tres unidades de chorizo", etc. are above; this catches bare: "un cachopo", "una pechuga"
+            regex: new RegExp(`(${wordQuantities})\\s+(?!kilos?|kg|gramos?|gr?|unidades?|units?|de\\s)([a-z\u00e1\u00e9\u00ed\u00f3\u00fa\u00f1][a-z\u00e1\u00e9\u00ed\u00f3\u00fa\u00f1\\s]+)`, 'i'),
             extract: (match) => ({
                 quantity: quantityMap[match[1].toLowerCase()] || 1,
                 unit: 'units',
                 product: match[2].trim()
             })
+        },
+        {
+            // Fallback: bare product name with implicit quantity of 1
+            // Catches: "compango de fabada", "chorizo extra" etc.
+            // Only matched if no other pattern already matched the segment.
+            regex: /^([a-z\u00e1\u00e9\u00ed\u00f3\u00fa\u00f1][a-z\u00e1\u00e9\u00ed\u00f3\u00fa\u00f1\s]+?)(?:\s+para\s+.*)?$/i,
+            extract: (match) => ({
+                quantity: 1,
+                unit: 'units',
+                product: match[1].trim()
+            }),
+            isFallback: true
         }
     ]
 
@@ -174,7 +195,10 @@ export const extractOrderIntent = (transcript) => {
                 try {
                     const item = pattern.extract(match)
                     if (item.product && item.quantity > 0) {
-                        // Preserve the original spoken segment text for transcripcionOriginal
+                        // Skip fallback patterns if a non-fallback already matched
+                        if (pattern.isFallback && items.some(i => i.transcripcionOriginal === segment)) {
+                            break
+                        }
                         item.transcripcionOriginal = segment
                         items.push(item)
                         logger.debug('Extracted item', item)
@@ -240,16 +264,21 @@ export const matchProductNames = async (extractedItems, products) => {
             notes = productName.replace(/^(?:y\s+)?otr[ao]s?\s+/, '').trim()
         } else {
             // Try to find a product name that matches the start of the extracted text
+            // Plural/singular normalization: "filetes" ↔ "filete"
+            const stem = (s) => s.split(' ').map(w => w.length > 3 && w.endsWith('s') ? w.slice(0, -1) : w).join(' ')
+            const productStem = stem(productName)
+
             for (const p of sortedProducts) {
                 const pName = p.name.toLowerCase()
+                const pStem = stem(pName)
 
-                // Check if extracted text starts with product name
-                // Allow for plural variations or exact match
-                if (productName === pName || productName.startsWith(pName + ' ')) {
+                // Check if extracted text starts with product name (allowing plural variation)
+                if (productName === pName || productName.startsWith(pName + ' ') ||
+                    productStem === pStem || productStem.startsWith(pStem + ' ')) {
                     matchedProduct = p
-                    // specificities are what remains
-                    notes = productName.slice(pName.length).trim()
-                    // cleanup notes (remove leading 'de', etc if needed)
+                    // specificities are what remains after the product prefix
+                    const prefixLen = productStem.startsWith(pStem + ' ') ? pName.length : pName.length
+                    notes = productName.slice(prefixLen).trim()
                     if (notes.startsWith('de ')) notes = notes.slice(3).trim()
                     if (notes.startsWith(',')) notes = notes.slice(1).trim()
                     break
