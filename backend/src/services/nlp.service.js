@@ -246,18 +246,19 @@ export const matchProductNames = async (extractedItems, products) => {
         }
 
         if (!matchedProduct) {
-            // Fallback to inclusion search if no prefix match
-            matchedProduct = sortedProducts.find(p => {
-                const pName = p.name.toLowerCase()
-                return productName.includes(pName)
-            })
+            // Fallback 1: inclusion — extracted text contains catalog name (e.g. "carne picada mixta" ⊇ "carne picada")
+            matchedProduct = sortedProducts.find(p => productName.includes(p.name.toLowerCase()))
             if (matchedProduct) {
-                // matched but not at start? strange but possible
-                // Let's assume the whole text is product + notes
-                // We'll keep original as notes for safety if we can't cleanly split
-                if (productName !== matchedProduct.name.toLowerCase()) {
-                    notes = productName.replace(matchedProduct.name.toLowerCase(), '').trim()
-                }
+                notes = productName.replace(matchedProduct.name.toLowerCase(), '').trim()
+            }
+        }
+
+        if (!matchedProduct) {
+            // Fallback 2: reverse-contains — catalog name contains extracted word
+            // e.g. "jamón" → "Jamón Ibérico" (first/longest match)
+            matchedProduct = sortedProducts.find(p => p.name.toLowerCase().includes(productName))
+            if (matchedProduct) {
+                notes = '' // product name is a subset; no leftover specifics
             }
         }
 
