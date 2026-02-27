@@ -36,18 +36,6 @@
           </div>
         </div>
       </div>
-
-      <div class="counter sold">
-        <div class="icon" style="border:2px solid var(--color-secondary);">
-          <i class="bi bi-currency-euro" style="color: var(--color-secondary);"></i>
-        </div>
-        <div class="content">
-          <span>Gasto Total</span>
-          <div id="number">
-            <span>{{ loading ? '...' : totalSpent }}</span>
-          </div>
-        </div>
-      </div>
     </div>
   </section>
 </template>
@@ -66,10 +54,6 @@ const totalOrders = computed(() => ordersStore.pagination.total || 0)
 // Ideally, we'd add an endpoint /api/orders/stats
 const pendingCount = computed(() => ordersStore.orders.filter(o => o.status === 'PENDING').length)
 const completedCount = computed(() => ordersStore.orders.filter(o => o.status === 'COMPLETED').length)
-const totalSpent = computed(() => {
-  const total = ordersStore.orders.reduce((sum, order) => sum + parseFloat(order.totalAmount), 0)
-  return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(total)
-})
 
 onMounted(() => {
   ordersStore.fetchOrders()
@@ -102,8 +86,8 @@ onMounted(() => {
   justify-content: left;
   column-gap: 1rem;
   padding: 1.5rem;
-  width: 45%;
-  min-width: 250px;
+  width: 30%;
+  min-width: 220px;
   color: var(--color-secundary);
   background: white;
   border-radius: 16px;
