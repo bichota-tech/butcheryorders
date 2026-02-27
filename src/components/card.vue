@@ -19,6 +19,25 @@
       </div>
 
       <div class="card-body p-4 overflow-auto">
+        <!-- Client Info -->
+        <div class="mb-4 p-3 bg-light rounded" v-if="ordersStore.currentOrder.clientName || ordersStore.currentOrder.clientPhone">
+          <h6 class="fw-bold mb-2"><i class="bi bi-person-fill me-1"></i> Datos del Cliente</h6>
+          <div class="row g-2">
+            <div class="col-6" v-if="ordersStore.currentOrder.clientName">
+              <small class="text-muted d-block">Nombre</small>
+              <span class="fw-bold">{{ ordersStore.currentOrder.clientName }}</span>
+            </div>
+            <div class="col-6" v-if="ordersStore.currentOrder.clientPhone">
+              <small class="text-muted d-block">Teléfono</small>
+              <span class="fw-bold">{{ ordersStore.currentOrder.clientPhone }}</span>
+            </div>
+            <div class="col-6" v-if="ordersStore.currentOrder.pickupDate">
+              <small class="text-muted d-block">Fecha de Recogida</small>
+              <span class="fw-bold">{{ formatPickupDate(ordersStore.currentOrder.pickupDate) }}</span>
+            </div>
+          </div>
+        </div>
+
         <h5 class="mb-3">Productos</h5>
         <div class="table-responsive">
           <table class="table table-hover align-middle">
@@ -26,24 +45,21 @@
               <tr>
                 <th>Producto</th>
                 <th class="text-center">Cant.</th>
-                <th class="text-end">Precio</th>
-                <th class="text-end">Total</th>
+                <th class="text-center">Unidad</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="item in ordersStore.currentOrder.items" :key="item.id">
-                <td>{{ item.product?.name || 'Producto desconocido' }}</td>
-                <td class="text-center">{{ item.quantity }} {{ item.unit }}</td>
-                <td class="text-end">{{ formatCurrency(item.priceAtTime) }}</td>
-                <td class="text-end fw-bold">{{ formatCurrency(item.quantity * item.priceAtTime) }}</td>
+                <td>
+                  {{ item.product?.name || 'Producto desconocido' }}
+                  <div v-if="item.notes" class="text-muted small fst-italic">
+                    <i class="bi bi-info-circle me-1"></i>{{ item.notes }}
+                  </div>
+                </td>
+                <td class="text-center">{{ item.quantity }}</td>
+                <td class="text-center">{{ item.unit }}</td>
               </tr>
             </tbody>
-            <tfoot class="table-light">
-              <tr>
-                <td colspan="3" class="text-end fw-bold">Total</td>
-                <td class="text-end fw-bold fs-5">{{ formatCurrency(ordersStore.currentOrder.totalAmount) }}</td>
-              </tr>
-            </tfoot>
           </table>
         </div>
         
@@ -56,13 +72,21 @@
       <div class="card-footer bg-white border-top p-3 d-flex justify-content-end gap-2">
          <button 
            v-if="ordersStore.currentOrder.status === 'PENDING'"
+           @click="completeOrder" 
+           class="btn btn-success"
+           :disabled="loading"
+         >
+           <i class="bi bi-check2-circle me-1"></i>
+           Completar Pedido
+         </button>
+         <button 
+           v-if="ordersStore.currentOrder.status === 'PENDING'"
            @click="cancelOrder" 
            class="btn btn-outline-danger"
            :disabled="loading"
          >
            Cancelar Pedido
          </button>
-         <!-- Admin actions could go here -->
       </div>
     </div>
   </section>
@@ -74,6 +98,20 @@ import { useOrdersStore } from '@/stores/orders'
 
 const ordersStore = useOrdersStore()
 const loading = ref(false)
+
+async function completeOrder() {
+  if (!confirm('¿Marcar este pedido como completado?')) return
+  
+  loading.value = true
+  try {
+    await ordersStore.updateOrder(ordersStore.currentOrder.id, 'COMPLETED')
+  } catch (error) {
+    console.error(error)
+    alert('Error al completar el pedido')
+  } finally {
+    loading.value = false
+  }
+}
 
 async function cancelOrder() {
   if (!confirm('¿Estás seguro de que quieres cancelar este pedido?')) return
@@ -110,11 +148,13 @@ function formatStatus(status) {
 }
 
 function formatDate(dateString) {
-  return new Date(dateString).toLocaleString()
+  return new Date(dateString).toLocaleString('es-ES')
 }
 
-function formatCurrency(amount) {
-  return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(amount)
+function formatPickupDate(dateString) {
+  return new Date(dateString).toLocaleDateString('es-ES', {
+    day: '2-digit', month: '2-digit', year: 'numeric'
+  })
 }
 </script>
 

@@ -9,6 +9,51 @@
           </div>
           
           <div class="card-body p-4">
+            <!-- Client Data Section -->
+    <div class="mb-4 p-3 bg-light rounded">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0"><i class="bi bi-person-fill me-2"></i>Datos del Cliente</h5>
+        <button v-if="hasClientData && !isEditingClientData" class="btn btn-sm btn-outline-primary" @click="isEditingClientData = true">
+          <i class="bi bi-pencil"></i> Editar
+        </button>
+      </div>
+
+      <!-- Summary Mode -->
+      <div v-if="hasClientData && !isEditingClientData" class="row g-3">
+        <div class="col-md-4">
+          <small class="text-muted d-block">Nombre</small>
+          <span class="fw-bold">{{ clientName }}</span>
+        </div>
+        <div class="col-md-4">
+          <small class="text-muted d-block">Teléfono</small>
+          <span class="fw-bold">{{ clientPhone }}</span>
+        </div>
+        <div class="col-md-4">
+          <small class="text-muted d-block">Fecha de Recogida</small>
+          <span class="fw-bold">{{ pickupDate }}</span>
+        </div>
+      </div>
+
+      <!-- Edit Mode -->
+      <div v-else class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label fw-bold small">Nombre del Cliente</label>
+          <input type="text" class="form-control" v-model="clientName" placeholder="Nombre y apellidos">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-bold small">Teléfono</label>
+          <input type="tel" class="form-control" v-model="clientPhone" placeholder="Nº de teléfono">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-bold small">Fecha de Recogida</label>
+          <input type="date" class="form-control" v-model="pickupDate">
+        </div>
+        <div class="col-12 text-end" v-if="hasClientData">
+           <button class="btn btn-sm btn-secondary" @click="isEditingClientData = false">Listo</button>
+        </div>
+      </div>
+      </div>
+
             <!-- Voice Control Area -->
             <div class="text-center mb-4">
               <button 
@@ -21,7 +66,7 @@
                 <i class="bi fs-1" :class="voiceStore.isRecording ? 'bi-stop-fill' : 'bi-mic-fill'"></i>
               </button>
               <p class="text-muted">
-                {{ voiceStore.isRecording ? 'Escuchando... (Di tu pedido)' : 'Pulsa para hablar' }}
+                {{ voiceStore.isRecording ? 'Escuchando... (Di el pedido del cliente)' : 'Pulsa para dictar el pedido' }}
               </p>
               
               <div v-if="voiceStore.error" class="alert alert-danger mt-3">
@@ -61,6 +106,7 @@
                       <th>Producto</th>
                       <th>Cantidad</th>
                       <th>Unidad</th>
+                      <th>Notas</th>
                       <th>Estado</th>
                       <th>Acción</th>
                     </tr>
@@ -73,6 +119,9 @@
                       </td>
                       <td>{{ item.quantity }}</td>
                       <td>{{ item.unit }}</td>
+                      <td>
+                        <input type="text" class="form-control form-control-sm" v-model="item.notes" placeholder="Detalles...">
+                      </td>
                       <td>
                         <i v-if="item.productId" class="bi bi-check-circle-fill text-success"></i>
                         <i v-else class="bi bi-exclamation-triangle-fill text-warning"></i>
@@ -103,13 +152,33 @@
       <div class="col-md-4 mt-4 mt-md-0">
         <div class="card shadow-sm border-0">
           <div class="card-body">
-            <h5 class="card-title fw-bold">Instrucciones</h5>
-            <p class="card-text text-muted">Ejemplos de qué decir:</p>
-            <ul class="list-group list-group-flush">
-              <li class="list-group-item bg-transparent">"Quiero 2 kilos de carne picada"</li>
-              <li class="list-group-item bg-transparent">"Medio kilo de jamón y 3 unidades de chorizo"</li>
-              <li class="list-group-item bg-transparent">"Un kilo de cinta de lomo"</li>
+            <h5 class="card-title fw-bold"><i class="bi bi-info-circle me-2"></i>Instrucciones</h5>
+            <p class="card-text text-muted small mb-2">Di el pedido completo en un solo dictado:</p>
+
+            <div class="mb-3">
+              <span class="badge bg-secondary mb-1">Formato base</span>
+              <p class="small text-muted mb-0">
+                <em>«Pedido para [Nombre], fecha de recogida [fecha], teléfono [número], [productos]»</em>
+              </p>
+            </div>
+
+            <span class="badge bg-secondary mb-2">Ejemplos completos</span>
+            <ul class="list-group list-group-flush small">
+              <li class="list-group-item bg-transparent px-0 py-2">
+                🗣 <em>«Pedido para Ana García, fecha de recogida 5 de marzo, teléfono 612345678, dos kilos de filetes de babilla finos, un kilo de carne picada y medio kilo de jamón ibérico»</em>
+              </li>
+              <li class="list-group-item bg-transparent px-0 py-2">
+                🗣 <em>«Pedido para Carlos Ruiz, teléfono 698765432, fecha de recogida día 10, un chuletón para parrilla, 500 gramos de solomillo y tres unidades de cachopos»</em>
+              </li>
+              <li class="list-group-item bg-transparent px-0 py-2">
+                🗣 <em>«Pedido para Lucía, teléfono seis uno dos cinco ocho siete nueve uno cuatro, recogida día 28, un kilo de filetes tiernos, medio kilo de redondo para asar, compango de fabada para cuatro personas»</em>
+              </li>
             </ul>
+
+            <div class="mt-3">
+              <span class="badge bg-secondary mb-1">Cortes disponibles</span>
+              <p class="small text-muted mb-0">Solomillo · Lomo Alto · Lomo Bajo · Babilla · Cadera · Tapa · Redondo · Contra · Chuletón · Filetes</p>
+            </div>
           </div>
         </div>
       </div>
@@ -146,9 +215,17 @@ const { startRecording, stopRecording, toggleRecording } = useVoiceRecording()
 const isProcessing = ref(false)
 const showSuccessToast = ref(false)
 
+// Client data fields
+const clientName = ref('')
+const clientPhone = ref('')
+const pickupDate = ref('')
+
 const isValidOrder = computed(() => {
   return voiceStore.recognizedItems.length > 0 && voiceStore.recognizedItems.every(item => item.productId)
 })
+
+const isEditingClientData = ref(false)
+const hasClientData = computed(() => !!(clientName.value || clientPhone.value || pickupDate.value))
 
 async function processTranscript() {
   if (!voiceStore.transcript) return
@@ -156,9 +233,19 @@ async function processTranscript() {
   isProcessing.value = true
   try {
     const result = await voiceService.processTranscript(voiceStore.transcript)
+    
+    // Set Recognized Items
     if (result.items) {
       voiceStore.setRecognizedItems(result.items)
     }
+
+    // Set Client Data if found
+    if (result.clientData) {
+      if (result.clientData.clientName) clientName.value = result.clientData.clientName
+      if (result.clientData.clientPhone) clientPhone.value = result.clientData.clientPhone
+      if (result.clientData.pickupDate) pickupDate.value = result.clientData.pickupDate
+    }
+
   } catch (error) {
     voiceStore.setError('Error al procesar el audio. Intenta de nuevo.')
     console.error(error)
@@ -170,10 +257,19 @@ async function processTranscript() {
 async function confirmOrder() {
   if (!isValidOrder.value) return
 
+  // Validate mandatory client data (phone is optional)
+  if (!clientName.value || !pickupDate.value) {
+    alert('⚠️ Faltan datos obligatorios (Nombre y Fecha de Recogida).\nPor favor, complétalos antes de confirmar.')
+    return
+  }
+
   try {
     const orderData = {
       items: voiceStore.recognizedItems,
-      transcript: voiceStore.transcript
+      transcript: voiceStore.transcript,
+      clientName: clientName.value || null,
+      clientPhone: clientPhone.value || null,
+      pickupDate: pickupDate.value || null
     }
     
     await ordersStore.createOrder(orderData)
@@ -194,6 +290,9 @@ async function confirmOrder() {
 
 function resetSession() {
   voiceStore.reset()
+  clientName.value = ''
+  clientPhone.value = ''
+  pickupDate.value = ''
 }
 </script>
 

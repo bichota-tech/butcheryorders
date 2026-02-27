@@ -31,6 +31,9 @@ model Order {
   user              User        @relation(fields: [userId], references: [id])
   status            OrderStatus @default(PENDING)
   totalAmount       Decimal     @db.Decimal(10, 2)
+  clientName        String?
+  clientPhone       String?
+  pickupDate        DateTime?
   voiceRecordingUrl String?
   transcript        String?
   createdAt         DateTime    @default(now())
@@ -42,14 +45,16 @@ model Order {
 }
 
 model OrderItem {
-  id          String  @id @default(uuid())
-  orderId     String
-  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId   String
-  product     Product @relation(fields: [productId], references: [id])
-  quantity    Decimal @db.Decimal(10, 3)
-  unit        String // kg, units, etc.
-  priceAtTime Decimal @db.Decimal(10, 2)
+  id                    String  @id @default(uuid())
+  orderId               String
+  order                 Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId             String
+  product               Product @relation(fields: [productId], references: [id])
+  quantity              Decimal @db.Decimal(10, 3)
+  unit                  String // kg, units, etc.
+  notes                 String? // specificities like "finos", "para empanar"
+  transcripcionOriginal String? // raw spoken text for this product line
+  priceAtTime           Decimal @db.Decimal(10, 2)
 
   @@index([orderId])
   @@map("order_items")

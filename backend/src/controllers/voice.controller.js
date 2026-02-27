@@ -32,6 +32,7 @@ export const processTranscript = async (req, res, next) => {
             confidence: extraction.confidence,
             items: matchedItems,
             validation,
+            clientData: extraction.clientData || {},
             originalTranscript: transcript
         }
 

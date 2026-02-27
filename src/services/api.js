@@ -2,7 +2,7 @@ import axios from 'axios'
 import router from '@/router'
 
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3100/api',
     timeout: 10000,
     headers: {
         'Content-Type': 'application/json'
@@ -46,7 +46,7 @@ api.interceptors.response.use(
             try {
                 // Attempt to refresh token
                 const response = await axios.post(
-                    `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/auth/refresh`,
+                    `${import.meta.env.VITE_API_URL || 'http://localhost:3100/api'}/auth/refresh`,
                     { refreshToken }
                 )
 

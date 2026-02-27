@@ -1,4 +1,5 @@
 import logger from '../utils/logger.js'
+import { extractClientInfo, segmentTranscript } from '../utils/nlp.utils.js'
 
 /**
  * Extract order intent and items from voice transcript
@@ -10,9 +11,38 @@ export const extractOrderIntent = (transcript) => {
 
     logger.info('Processing transcript', { transcript: text })
 
-    // Pattern matching for common Spanish phrases
-    const patterns = [
-        // COMMANDS
+    // ── Isolate product list from client header ───────────────────────────────
+    const segments_meta = segmentTranscript(transcript)
+    let productText = segments_meta.productListText || text
+
+    // ── Text normalization ────────────────────────────────────────────────────
+    // 1. Add space between digit and unit letter (e.g. "500g" → "500 g", "2kg" → "2 kg")
+    productText = productText.replace(/(\d+)(kg|gr?|g)(?=\s|de\s|$)/gi, '$1 $2')
+    // 2. STT error corrections (common speech-to-text mistakes)
+    const STT_CORRECTIONS = [
+        [/\bcon\s+pango\b/gi, 'compango'],
+        [/\bpon\s+pango\b/gi, 'compango'],
+        [/\bcon\s+pan\s+go\b/gi, 'compango'],
+    ]
+    for (const [pattern, fix] of STT_CORRECTIONS) productText = productText.replace(pattern, fix)
+
+    // Split product list by:
+    // 1. "y" or ","
+    // 2. New product boundary: digit OR word-quantity followed by a unit keyword
+    //    e.g. "...ternera 300 gr..."   → split before "300 gr"
+    //    e.g. "...tiernos medio kilo..." → split before "medio kilo"
+    const UNITS = '(?:kilos?|kg|gramos?|grs?\\b|g\\b|unidades?)'
+    const WORD_QTYS = '(?:medio|media|un|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)'
+    const PRODUCT_BOUNDARY = new RegExp(
+        `\\s+(?=(?:\\d+(?:[.,]\\d+)?|${WORD_QTYS})\\s+${UNITS})`,
+        'i'
+    )
+    const segments = productText.split(/\s+y\s+|,\s*/).flatMap(seg =>
+        seg.split(PRODUCT_BOUNDARY)
+    ).map(s => s.trim()).filter(Boolean)
+
+    // Command patterns (check on full text, not segments)
+    const commandPatterns = [
         {
             regex: /ver\s+pedidos\s+de\s+(hoy|ayer|esta\s+semana)/i,
             extract: (match) => ({ command: 'filter_date', value: match[1].toLowerCase() })
@@ -24,11 +54,55 @@ export const extractOrderIntent = (transcript) => {
         {
             regex: /exportar\s+(?:a\s+)?excel/i,
             extract: () => ({ command: 'export_excel' })
-        },
-        // PRODUCT PATTERNS
+        }
+    ]
+
+    // Check for commands first on the full text
+    for (const pattern of commandPatterns) {
+        const match = pattern.regex.exec(text)
+        if (match) {
+            const item = pattern.extract(match)
+            items.push(item)
+        }
+    }
+
+    // If we found commands, return early
+    const commands = items.filter(i => i.command)
+    if (commands.length > 0) {
+        logger.info('Intent extraction complete', { intent: 'command', commandCount: commands.length })
+        return {
+            intent: 'command',
+            items: [],
+            commands,
+            confidence: 0.8,
+            originalTranscript: transcript
+        }
+    }
+
+    // Quantity word map (shared)
+    const quantityMap = {
+        medio: 0.5,
+        media: 0.5,
+        un: 1,
+        una: 1,
+        dos: 2,
+        tres: 3,
+        cuatro: 4,
+        cinco: 5,
+        seis: 6,
+        siete: 7,
+        ocho: 8,
+        nueve: 9,
+        diez: 10
+    }
+
+    const wordQuantities = Object.keys(quantityMap).join('|')
+
+    // Product patterns - applied to each segment independently
+    const productPatterns = [
         {
-            // "2 kilos de carne roja", "3 kg de pollo"
-            regex: /(\d+(?:[.,]\d+)?)\s*(kilos?|kg)\s+(?:de\s+)?([a-záéíóúñ\s]+?)(?=\s+y\s+|\s*$|,)/gi,
+            // "2 kilos de carne roja", "3 kg de pollo", "1,5 kilos de ternera"
+            regex: /(\d+(?:[.,]\d+)?)\s*(kilos?|kg)\s+(?:de\s+)?([a-záéíóúñ\s]+)/i,
             extract: (match) => ({
                 quantity: parseFloat(match[1].replace(',', '.')),
                 unit: 'kg',
@@ -36,8 +110,17 @@ export const extractOrderIntent = (transcript) => {
             })
         },
         {
-            // "5 unidades de chorizo", "2 units de salchichas"
-            regex: /(\d+)\s*(unidades?|units?)\s+(?:de\s+)?([a-záéíóúñ\s]+?)(?=\s+y\s+|\s*$|,)/gi,
+            // "500 gramos de carne picada", "250g de lomo"
+            regex: /(\d+(?:[.,]\d+)?)\s*(gramos?|gr?)\s+(?:de\s+)?([a-záéíóúñ\s]+)/i,
+            extract: (match) => ({
+                quantity: parseFloat(match[1].replace(',', '.')) / 1000, // convert to kg
+                unit: 'kg',
+                product: match[3].trim()
+            })
+        },
+        {
+            // "5 unidades de chorizo", "2 unidades de salchichas"
+            regex: /(\d+)\s*(unidades?|units?)\s+(?:de\s+)?([a-záéíóúñ\s]+)/i,
             extract: (match) => ({
                 quantity: parseInt(match[1]),
                 unit: 'units',
@@ -45,65 +128,113 @@ export const extractOrderIntent = (transcript) => {
             })
         },
         {
-            // "medio kilo de jamón", "un kilo de cerdo"
-            regex: /(medio|un|una|dos|tres|cuatro|cinco)\s+(kilos?|kg)\s+(?:de\s+)?([a-záéíóúñ\s]+?)(?=\s+y\s+|\s*$|,)/gi,
-            extract: (match) => {
-                const quantityMap = {
-                    medio: 0.5,
-                    un: 1,
-                    una: 1,
-                    dos: 2,
-                    tres: 3,
-                    cuatro: 4,
-                    cinco: 5
-                }
-                return {
-                    quantity: quantityMap[match[1]] || 1,
-                    unit: 'kg',
-                    product: match[3].trim()
-                }
-            }
+            // "1 cachopo grande", "2 entrecots" — bare digit + product name (no unit keyword)
+            regex: /(\d+)\s+(?!kilos?|kg|gramos?|gr?|unidades?|units?|de\s)([a-záéíóúñ][a-záéíóúñ\s]+)/i,
+            extract: (match) => ({
+                quantity: parseInt(match[1]),
+                unit: 'units',
+                product: match[2].trim()
+            })
+        },
+        {
+            // "medio kilo de jamón", "un kilo de cerdo", "tres kilos de ternera"
+            regex: new RegExp(`(${wordQuantities})\\s+(kilos?|kg)\\s+(?:de\\s+)?([a-záéíóúñ\\s]+)`, 'i'),
+            extract: (match) => ({
+                quantity: quantityMap[match[1].toLowerCase()] || 1,
+                unit: 'kg',
+                product: match[3].trim()
+            })
+        },
+        {
+            // "quinientos gramos de...", "doscientos cincuenta gramos"
+            regex: new RegExp(`(${wordQuantities})\\s+(gramos?|gr?)\\s+(?:de\\s+)?([a-záéíóúñ\\s]+)`, 'i'),
+            extract: (match) => ({
+                quantity: (quantityMap[match[1].toLowerCase()] || 1) / 1000,
+                unit: 'kg',
+                product: match[3].trim()
+            })
+        },
+        {
+            // "tres unidades de chorizo", "una unidad de hamburguesa", "dos unidades de croquetas"
+            regex: new RegExp(`(${wordQuantities})\\s+(unidades?|units?)\\s+(?:de\\s+)?([a-záéíóúñ\\s]+)`, 'i'),
+            extract: (match) => ({
+                quantity: quantityMap[match[1].toLowerCase()] || 1,
+                unit: 'units',
+                product: match[3].trim()
+            })
+        },
+        {
+            // "tres unidades de chorizo", etc. are above; this catches bare: "un cachopo", "una pechuga"
+            regex: new RegExp(`(${wordQuantities})\\s+(?!kilos?|kg|gramos?|gr?|unidades?|units?|de\\s)([a-z\u00e1\u00e9\u00ed\u00f3\u00fa\u00f1][a-z\u00e1\u00e9\u00ed\u00f3\u00fa\u00f1\\s]+)`, 'i'),
+            extract: (match) => ({
+                quantity: quantityMap[match[1].toLowerCase()] || 1,
+                unit: 'units',
+                product: match[2].trim()
+            })
+        },
+        {
+            // Fallback: bare product name with implicit quantity of 1
+            // Catches: "compango de fabada", "chorizo extra" etc.
+            // Only matched if no other pattern already matched the segment.
+            regex: /^([a-z\u00e1\u00e9\u00ed\u00f3\u00fa\u00f1][a-z\u00e1\u00e9\u00ed\u00f3\u00fa\u00f1\s]+?)(?:\s+para\s+.*)?$/i,
+            extract: (match) => ({
+                quantity: 1,
+                unit: 'units',
+                product: match[1].trim()
+            }),
+            isFallback: true
         }
     ]
 
-    // Apply all patterns
-    patterns.forEach((pattern) => {
-        let match
-        const regex = new RegExp(pattern.regex)
-        while ((match = regex.exec(text)) !== null) {
-            try {
-                const item = pattern.extract(match)
-                if (item.product && item.quantity > 0) {
-                    items.push(item)
-                    logger.debug('Extracted item', item)
+    // Process each segment independently
+    for (const segment of segments) {
+        let matched = false
+        for (const pattern of productPatterns) {
+            const match = pattern.regex.exec(segment)
+            if (match) {
+                try {
+                    const item = pattern.extract(match)
+                    if (item.product && item.quantity > 0) {
+                        // Skip fallback patterns if a non-fallback already matched
+                        if (pattern.isFallback && items.some(i => i.transcripcionOriginal === segment)) {
+                            break
+                        }
+                        item.transcripcionOriginal = segment
+                        items.push(item)
+                        logger.debug('Extracted item', item)
+                        matched = true
+                        break // One match per segment is enough
+                    }
+                } catch (error) {
+                    logger.warn('Failed to extract item from match', { match, error: error.message })
                 }
-            } catch (error) {
-                logger.warn('Failed to extract item from match', { match, error: error.message })
             }
         }
-    })
-
-    // Determine intent
-    const commands = items.filter(i => i.command)
-    const orderItems = items.filter(i => !i.command)
-
-    let intent = 'unknown'
-    if (commands.length > 0) {
-        intent = 'command'
-    } else if (orderItems.length > 0) {
-        intent = 'create_order'
+        if (!matched) {
+            logger.debug('No pattern matched for segment', { segment })
+        }
     }
 
-    const confidence = (commands.length > 0 || orderItems.length > 0) ? 0.8 : 0.3
+    const orderItems = items.filter(i => !i.command)
 
-    logger.info('Intent extraction complete', { intent, commandCount: commands.length, itemCount: orderItems.length, confidence })
+    const intent = orderItems.length > 0 ? 'create_order' : 'unknown'
+    const confidence = orderItems.length > 0 ? 0.8 : 0.3
+
+    logger.info('Intent extraction complete', { intent, itemCount: orderItems.length, confidence })
+
+    // Extract client info (Name, Phone, Date)
+    const clientData = extractClientInfo(transcript)
+    if (clientData.clientName || clientData.clientPhone || clientData.pickupDate) {
+        logger.info('Extracted client data', clientData)
+    }
 
     return {
         intent,
         items: orderItems,
-        commands,
+        commands: [],
         confidence,
-        originalTranscript: transcript
+        originalTranscript: transcript,
+        clientData
     }
 }
 
@@ -113,32 +244,81 @@ export const extractOrderIntent = (transcript) => {
 export const matchProductNames = async (extractedItems, products) => {
     const matchedItems = []
 
+    // 1. Sort products by name length descending to match longest possible name first
+    // "filetes de ternera" should match before "ternera"
+    const sortedProducts = [...products].sort((a, b) => b.name.length - a.name.length)
+
+    let lastMatchedProduct = null
+
     for (const item of extractedItems) {
-        const productName = item.product.toLowerCase()
+        let productName = item.product.toLowerCase()
+        let matchedProduct = null
+        let notes = ''
 
-        // Find best match in product catalog
-        const match = products.find((p) => {
-            const pName = p.name.toLowerCase()
-            return (
-                pName === productName ||
-                pName.includes(productName) ||
-                productName.includes(pName) ||
-                // Handle common variations
-                (productName.includes('carne') && pName.includes('carne')) ||
-                (productName.includes('pollo') && pName.includes('pollo')) ||
-                (productName.includes('cerdo') && pName.includes('cerdo'))
-            )
-        })
+        // 0. Check for context reference ("otra", "otro")
+        // "una pechuga en filetes y otra en trozos"
+        if (lastMatchedProduct && (productName.startsWith('otr') || productName.startsWith('y otr'))) {
+            matchedProduct = lastMatchedProduct
+            // Remove "otra" text to get notes
+            // "otra en trozos" -> "en trozos"
+            notes = productName.replace(/^(?:y\s+)?otr[ao]s?\s+/, '').trim()
+        } else {
+            // Try to find a product name that matches the start of the extracted text
+            // Plural/singular normalization: "filetes" ↔ "filete"
+            const stem = (s) => s.split(' ').map(w => w.length > 3 && w.endsWith('s') ? w.slice(0, -1) : w).join(' ')
+            const productStem = stem(productName)
 
-        if (match) {
+            for (const p of sortedProducts) {
+                const pName = p.name.toLowerCase()
+                const pStem = stem(pName)
+
+                // Check if extracted text starts with product name (allowing plural variation)
+                if (productName === pName || productName.startsWith(pName + ' ') ||
+                    productStem === pStem || productStem.startsWith(pStem + ' ')) {
+                    matchedProduct = p
+                    // specificities are what remains after the product prefix
+                    const prefixLen = productStem.startsWith(pStem + ' ') ? pName.length : pName.length
+                    notes = productName.slice(prefixLen).trim()
+                    if (notes.startsWith('de ')) notes = notes.slice(3).trim()
+                    if (notes.startsWith(',')) notes = notes.slice(1).trim()
+                    break
+                }
+            }
+        }
+
+        if (!matchedProduct) {
+            // Fallback 1: inclusion — extracted text contains catalog name (e.g. "carne picada mixta" ⊇ "carne picada")
+            matchedProduct = sortedProducts.find(p => productName.includes(p.name.toLowerCase()))
+            if (matchedProduct) {
+                notes = productName.replace(matchedProduct.name.toLowerCase(), '').trim()
+            }
+        }
+
+        if (!matchedProduct) {
+            // Fallback 2: reverse-contains — catalog name contains extracted word
+            // e.g. "jamón" → "Jamón Ibérico" (first/longest match)
+            matchedProduct = sortedProducts.find(p => p.name.toLowerCase().includes(productName))
+            if (matchedProduct) {
+                notes = '' // product name is a subset; no leftover specifics
+            }
+        }
+
+        if (matchedProduct) {
+            lastMatchedProduct = matchedProduct // Update context
             matchedItems.push({
-                productId: match.id,
-                productName: match.name,
+                productId: matchedProduct.id,
+                productName: matchedProduct.name,
                 quantity: item.quantity,
                 unit: item.unit,
+                notes: notes || null,
+                transcripcionOriginal: item.transcripcionOriginal || null,
                 confidence: 0.9
             })
-            logger.debug('Matched product', { extracted: item.product, matched: match.name })
+            logger.debug('Matched product', {
+                extracted: item.product,
+                matched: matchedProduct.name,
+                notes: notes
+            })
         } else {
             logger.warn('No product match found', { product: item.product })
             matchedItems.push({
@@ -146,6 +326,7 @@ export const matchProductNames = async (extractedItems, products) => {
                 productName: item.product,
                 quantity: item.quantity,
                 unit: item.unit,
+                notes: null,
                 confidence: 0.3,
                 needsManualReview: true
             })
