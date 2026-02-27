@@ -257,9 +257,9 @@ async function processTranscript() {
 async function confirmOrder() {
   if (!isValidOrder.value) return
 
-  // Validate client data
-  if (!clientName.value || !clientPhone.value || !pickupDate.value) {
-    alert('⚠️ Faltan datos obligatorios del cliente (Nombre, Teléfono o Fecha de Recogida).\nPor favor, complétalos antes de confirmar.')
+  // Validate mandatory client data (phone is optional)
+  if (!clientName.value || !pickupDate.value) {
+    alert('⚠️ Faltan datos obligatorios (Nombre y Fecha de Recogida).\nPor favor, complétalos antes de confirmar.')
     return
   }
 
