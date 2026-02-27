@@ -20,13 +20,31 @@ const monthMap = {
 
 const MONTH_NAMES = Object.keys(monthMap).join('|')
 
+// Word-only day numbers 1-31 (used in regex alternation)
+const WORD_DAY_RE = /^(veintiocho|veintinueve|veinticinco|veinticuatro|veintitres|veintitrés|veintidos|veintidós|veintiuno|veintiún|veinte|diecinueve|dieciocho|diecisiete|dieciséis|dieciseis|quince|catorce|trece|doce|once|diez|nueve|ocho|siete|seis|cinco|cuatro|tres|dos|uno|un|una|treinta(?:\s+y\s+una?)?)(?=\s|,|$)/i
+
+function nextOccurrenceOfDay(day) {
+    const now = new Date()
+    let month = now.getMonth()
+    let year = now.getFullYear()
+    if (day <= now.getDate()) {
+        month++
+        if (month > 11) { month = 0; year++ }
+    }
+    return formatDate(new Date(year, month, day))
+}
+
+/**
+ * Parses a spoken Spanish date string into YYYY-MM-DD.
+ * Handles: "5 de marzo", "veintiocho de febrero", "25/02", "10" (bare day), "veintiocho" (bare word-day)
+ */
 export const parseSpanishDate = (text) => {
     try {
         text = text.trim()
         const lower = text.toLowerCase()
 
         // DD/MM/YYYY or DD-MM-YYYY
-        const slashMatch = text.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{4}))?/)
+        const slashMatch = text.match(/^(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{4}))?/)
         if (slashMatch) {
             const day = parseInt(slashMatch[1])
             const month = parseInt(slashMatch[2]) - 1
@@ -49,15 +67,18 @@ export const parseSpanishDate = (text) => {
             if (day && month !== undefined) return formatDate(new Date(year, month, day))
         }
 
-        // Bare day number "28" — assume current/next month
-        const bareDay = lower.match(/^(\d{1,2})$/)
-        if (bareDay) {
-            const day = parseInt(bareDay[1])
-            const now = new Date()
-            let month = now.getMonth()
-            let year = now.getFullYear()
-            if (day < now.getDate()) { month++; if (month > 11) { month = 0; year++ } }
-            return formatDate(new Date(year, month, day))
+        // Bare digit day "28" (no month)
+        const bareDigitDay = lower.match(/^(\d{1,2})$/)
+        if (bareDigitDay) {
+            return nextOccurrenceOfDay(parseInt(bareDigitDay[1]))
+        }
+
+        // Bare word-day "veintiocho" (no month)
+        const bareWordDay = lower.match(WORD_DAY_RE)
+        if (bareWordDay) {
+            const key = bareWordDay[1].trim().toLowerCase()
+            const day = numberMap[key]
+            if (day !== undefined && day >= 1) return nextOccurrenceOfDay(day)
         }
 
         return null
@@ -90,10 +111,9 @@ export const wordsToPhone = (text) => {
 }
 
 /**
- * ORDER-INDEPENDENT segment extractor.
- * Tracks lastMetaEnd = position after the LAST metadata section.
- * Everything after that is the product list.
- * Works regardless of whether fields appear as: name→date→phone or name→phone→date.
+ * ORDER-INDEPENDENT segmentation.
+ * Tracks lastMetaEnd = position after the LAST metadata section (name / date / phone).
+ * Everything after lastMetaEnd = product list.
  */
 export const segmentTranscript = (transcript) => {
     const text = transcript.toLowerCase().trim()
@@ -103,7 +123,7 @@ export const segmentTranscript = (transcript) => {
 
     // ── Name ────────────────────────────────────────────────────────────────────
     const nameM = text.match(
-        /(?:pedido\s+para|nombre(?:\s+del)?\s+cliente)\s+(.+?)(?=\s+(?:fecha|tel[eé]fono|tlf|móvil)|,|$)/i
+        /(?:pedido\s+para|nombre(?:\s+del)?\s+cliente)\s+(.+?)(?=\s+(?:fecha|tel[eé]fono|tlf|móvil|recogida)|,|$)/i
     )
     if (nameM) {
         result.nameText = nameM[1].trim()
@@ -111,20 +131,34 @@ export const segmentTranscript = (transcript) => {
     }
 
     // ── Date ────────────────────────────────────────────────────────────────────
-    // Only extract the ACTUAL date value (not everything until end of string)
-    const DATE_VALUE_RE = new RegExp(
-        `(\\d{1,2}(?:[\\/\\-]\\d{1,2}(?:[\\/\\-]\\d{4})?)|` +       // 25/02/2026
-        `(?:[a-záéíóúñ]+(?:\\s+y\\s+\\w+)?)\\s+de\\s+(?:${MONTH_NAMES})(?:\\s+de\\s+\\d{4})?|` + // treinta de febrero de 2026
-        `\\d{1,2})`,                                                   // bare "28"
-        'i'
+    // Keyword: "fecha de recogida [día]" | "recogida [el] día" | "[el] día"
+    // Crucially we also consume an optional "día/el día" prefix after "fecha de recogida"
+    const dateKwM = text.match(
+        /(?:fecha(?:\s+de)?\s+recogida(?:\s+(?:el\s+)?d[ií]a)?|recogida\s+(?:el\s+)?d[ií]a|(?:el\s+)?d[ií]a)\s+/i
     )
-    const dateKwM = text.match(/(?:fecha(?:\s+de)?\s+recogida|recogida\s+d[ií]a|d[ií]a)\s+/i)
     if (dateKwM) {
         const afterKw = text.slice(dateKwM.index + dateKwM[0].length)
-        const dateValM = afterKw.match(DATE_VALUE_RE)
-        if (dateValM && afterKw.startsWith(dateValM[1])) {
-            result.dateText = dateValM[1].trim()
-            const dateEndInFull = dateKwM.index + dateKwM[0].length + dateValM[1].length
+
+        let dateValue = null
+        let dateValueLen = 0
+
+        // Strategy 1: DD/MM or DD/MM/YYYY
+        const s1 = afterKw.match(/^(\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{4})?)/)
+        // Strategy 2: "word/digit de month [de year]"
+        const s2 = afterKw.match(new RegExp(`^([\\w][\\w\\s]*?)\\s+de\\s+(${MONTH_NAMES})(?:\\s+de\\s+\\d{4})?(?=\\s|,|$)`, 'i'))
+        // Strategy 3: bare digit day "10"
+        const s3 = afterKw.match(/^(\d{1,2})(?=\s|,|$)/)
+        // Strategy 4: bare word-day "veintiocho"
+        const s4 = afterKw.match(WORD_DAY_RE)
+
+        if (s1) { dateValue = s1[1]; dateValueLen = s1[1].length }
+        else if (s2) { dateValue = s2[0].trim(); dateValueLen = s2[0].length }
+        else if (s3) { dateValue = s3[1]; dateValueLen = s3[1].length }
+        else if (s4) { dateValue = s4[1]; dateValueLen = s4[1].length }
+
+        if (dateValue) {
+            result.dateText = dateValue.trim()
+            const dateEndInFull = dateKwM.index + dateKwM[0].length + dateValueLen
             lastMetaEnd = Math.max(lastMetaEnd, dateEndInFull)
         }
     }
