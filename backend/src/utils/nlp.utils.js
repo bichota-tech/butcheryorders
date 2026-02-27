@@ -18,9 +18,8 @@ const monthMap = {
     'julio': 6, 'agosto': 7, 'septiembre': 8, 'octubre': 9, 'noviembre': 10, 'diciembre': 11
 }
 
-/**
- * Parses a spoken Spanish date string into YYYY-MM-DD
- */
+const MONTH_NAMES = Object.keys(monthMap).join('|')
+
 export const parseSpanishDate = (text) => {
     try {
         text = text.trim()
@@ -35,8 +34,10 @@ export const parseSpanishDate = (text) => {
             return formatDate(new Date(year, month, day))
         }
 
-        // "veinticinco de febrero" / "25 de febrero"
-        const dayMatch = lower.match(/(?:el\s+)?(\w[\w\s]*?)\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/)
+        // "veinticinco de febrero de 2026" / "25 de febrero"
+        const dayMatch = lower.match(
+            new RegExp(`(?:el\\s+)?(\\w[\\w\\s]*?)\\s+de\\s+(${MONTH_NAMES})`)
+        )
         if (dayMatch) {
             const dayStr = dayMatch[1].trim()
             const monthStr = dayMatch[2].trim()
@@ -46,6 +47,17 @@ export const parseSpanishDate = (text) => {
             const yearMatch = lower.match(/de\s+(\d{4})/)
             if (yearMatch) year = parseInt(yearMatch[1])
             if (day && month !== undefined) return formatDate(new Date(year, month, day))
+        }
+
+        // Bare day number "28" — assume current/next month
+        const bareDay = lower.match(/^(\d{1,2})$/)
+        if (bareDay) {
+            const day = parseInt(bareDay[1])
+            const now = new Date()
+            let month = now.getMonth()
+            let year = now.getFullYear()
+            if (day < now.getDate()) { month++; if (month > 11) { month = 0; year++ } }
+            return formatDate(new Date(year, month, day))
         }
 
         return null
@@ -59,21 +71,13 @@ function formatDate(date) {
     return `${yyyy}-${mm}-${dd}`
 }
 
-/**
- * Gets the digit string contributed by a single word/token.
- * "seis"→"6", "doce"→"12", "veintinueve"→"29", "684"→"684"
- * Returns null if the token is not numeric.
- */
-function tokenToDigits(token) {
+/** Gets digits contributed by a single token. "seis"→"6", "doce"→"12", "684"→"684", other→null */
+export function tokenToDigits(token) {
     if (/^\d+$/.test(token)) return token
     if (numberMap[token] !== undefined) return String(numberMap[token])
     return null
 }
 
-/**
- * Converts a free-form text with number words/digits into a phone string.
- * Accepts multi-digit words: "seis doce veintinueve..." → "612295..."
- */
 export const wordsToPhone = (text) => {
     const words = text.toLowerCase().trim().split(/[\s\-]+/)
     let phone = ''
@@ -86,30 +90,46 @@ export const wordsToPhone = (text) => {
 }
 
 /**
- * Segments transcript into: name, date, phone (9 digits), and product list.
- *
- * Key algorithm for phone: parse tokens one-by-one after "teléfono" keyword,
- * accumulate digits until 9 are reached, then treat the rest as products.
- * This correctly handles groups like "seis doce veintinueve..." without consuming products.
+ * ORDER-INDEPENDENT segment extractor.
+ * Tracks lastMetaEnd = position after the LAST metadata section.
+ * Everything after that is the product list.
+ * Works regardless of whether fields appear as: name→date→phone or name→phone→date.
  */
 export const segmentTranscript = (transcript) => {
     const text = transcript.toLowerCase().trim()
     const result = { nameText: null, dateText: null, phoneText: null, productListText: null, rawText: text }
 
-    // ── 1. Name ────────────────────────────────────────────────────────────────
+    let lastMetaEnd = 0
+
+    // ── Name ────────────────────────────────────────────────────────────────────
     const nameM = text.match(
-        /(?:pedido\s+para|nombre(?:\s+del)?\s+cliente)\s+(.+?)(?=\s+(?:fecha|tel[eé]fono|tlf)|,|$)/i
+        /(?:pedido\s+para|nombre(?:\s+del)?\s+cliente)\s+(.+?)(?=\s+(?:fecha|tel[eé]fono|tlf|móvil)|,|$)/i
     )
-    if (nameM) result.nameText = nameM[1].trim()
+    if (nameM) {
+        result.nameText = nameM[1].trim()
+        lastMetaEnd = Math.max(lastMetaEnd, nameM.index + nameM[0].length)
+    }
 
-    // ── 2. Date ────────────────────────────────────────────────────────────────
-    const dateM = text.match(
-        /(?:fecha(?:\s+de)?\s+recogida)\s+(.+?)(?=\s+(?:tel[eé]fono|tlf|móvil|nombre)|,|$)/i
+    // ── Date ────────────────────────────────────────────────────────────────────
+    // Only extract the ACTUAL date value (not everything until end of string)
+    const DATE_VALUE_RE = new RegExp(
+        `(\\d{1,2}(?:[\\/\\-]\\d{1,2}(?:[\\/\\-]\\d{4})?)|` +       // 25/02/2026
+        `(?:[a-záéíóúñ]+(?:\\s+y\\s+\\w+)?)\\s+de\\s+(?:${MONTH_NAMES})(?:\\s+de\\s+\\d{4})?|` + // treinta de febrero de 2026
+        `\\d{1,2})`,                                                   // bare "28"
+        'i'
     )
-    if (dateM) result.dateText = dateM[1].trim()
+    const dateKwM = text.match(/(?:fecha(?:\s+de)?\s+recogida|recogida\s+d[ií]a|d[ií]a)\s+/i)
+    if (dateKwM) {
+        const afterKw = text.slice(dateKwM.index + dateKwM[0].length)
+        const dateValM = afterKw.match(DATE_VALUE_RE)
+        if (dateValM && afterKw.startsWith(dateValM[1])) {
+            result.dateText = dateValM[1].trim()
+            const dateEndInFull = dateKwM.index + dateKwM[0].length + dateValM[1].length
+            lastMetaEnd = Math.max(lastMetaEnd, dateEndInFull)
+        }
+    }
 
-    // ── 3. Phone + product boundary ────────────────────────────────────────────
-    // Find "teléfono" keyword, then consume tokens one-by-one until 9 digits.
+    // ── Phone (token-by-token, stops at exactly 9 digits) ─────────────────────
     const phoneKwM = text.match(/(?:tel[eé]fonos?|tlf|móvil)\s+/i)
     if (phoneKwM) {
         const afterKw = text.slice(phoneKwM.index + phoneKwM[0].length)
@@ -120,9 +140,7 @@ export const segmentTranscript = (transcript) => {
         for (const token of tokens) {
             const digits = tokenToDigits(token)
             if (digits === null) {
-                // Non-numeric token → end of phone number
                 if (phone.length > 0) break
-                // If no digits yet, keep looking (e.g. skip "del" before number)
                 consumedCount++
                 continue
             }
@@ -131,37 +149,29 @@ export const segmentTranscript = (transcript) => {
             if (phone.length >= 9) break
         }
 
-        if (phone.length >= 9) {
-            result.phoneText = phone.slice(0, 12)
-        }
+        if (phone.length >= 9) result.phoneText = phone.slice(0, 12)
 
-        // Product list = everything after the consumed phone tokens
         const consumedText = tokens.slice(0, consumedCount).join(' ')
-        // Find exact position of consumed text in afterKw, then take the rest
-        const consumedLen = afterKw.indexOf(consumedText) + consumedText.length
-        const rest = afterKw.slice(consumedLen).replace(/^[\s,]+/, '').trim()
-        if (rest.length > 3) {
-            result.productListText = rest
-        }
+        const phoneEndInFull = phoneKwM.index + phoneKwM[0].length + consumedText.length
+        lastMetaEnd = Math.max(lastMetaEnd, phoneEndInFull)
+    }
+
+    // ── Product list = everything AFTER the last metadata section ───────────────
+    if (lastMetaEnd > 0 && lastMetaEnd < text.length) {
+        const rest = text.slice(lastMetaEnd).replace(/^[\s,]+/, '').trim()
+        if (rest.length > 3) result.productListText = rest
     }
 
     return result
 }
 
-/**
- * Extracts clientName, clientPhone, pickupDate from a structured transcript.
- */
 export const extractClientInfo = (transcript) => {
     const result = {}
     try {
         const segments = segmentTranscript(transcript)
-
         if (segments.nameText) {
             result.clientName = segments.nameText
-                .split(' ')
-                .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-                .join(' ')
-                .trim()
+                .split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ').trim()
         }
         if (segments.dateText) {
             const parsedDate = parseSpanishDate(segments.dateText)
@@ -170,7 +180,6 @@ export const extractClientInfo = (transcript) => {
         if (segments.phoneText) {
             result.clientPhone = segments.phoneText
         }
-    } catch (e) { /* fallback: return partial */ }
-
+    } catch (e) { /* return partial */ }
     return result
 }

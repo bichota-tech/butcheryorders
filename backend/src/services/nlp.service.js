@@ -17,8 +17,13 @@ export const extractOrderIntent = (transcript) => {
     const segments_meta = segmentTranscript(transcript)
     const productText = segments_meta.productListText || text
 
-    // Split product list by "y" or "," to handle multiple items
-    const segments = productText.split(/\s+y\s+|,\s*/).map(s => s.trim()).filter(Boolean)
+    // Split product list by:
+    // 1. "y" or ","
+    // 2. A digit+unit pattern that starts a new product (e.g. "...ternera 300 gr de jamón...")
+    const NUMERIC_QTY_BOUNDARY = /\s+(?=\d+(?:[.,]\d+)?\s+(?:kilos?|kg|gramos?|gr?\b|unidades?))/i
+    const segments = productText.split(/\s+y\s+|,\s*/).flatMap(seg =>
+        seg.split(NUMERIC_QTY_BOUNDARY)
+    ).map(s => s.trim()).filter(Boolean)
 
     // Command patterns (check on full text, not segments)
     const commandPatterns = [

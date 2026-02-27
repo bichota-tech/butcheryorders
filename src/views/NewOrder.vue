@@ -152,14 +152,33 @@
       <div class="col-md-4 mt-4 mt-md-0">
         <div class="card shadow-sm border-0">
           <div class="card-body">
-            <h5 class="card-title fw-bold">Instrucciones</h5>
-            <p class="card-text text-muted">Ejemplos de qué decir:</p>
-            <ul class="list-group list-group-flush">
-              <li class="list-group-item bg-transparent">"Quiero 2 kilos de carne picada"</li>
-              <li class="list-group-item bg-transparent">"Medio kilo de jamón y 3 unidades de chorizo"</li>
-              <li class="list-group-item bg-transparent">"Un kilo de cinta de lomo"</li>
-              <li class="list-group-item bg-transparent">"Tres unidades de hamburguesas"</li>
+            <h5 class="card-title fw-bold"><i class="bi bi-info-circle me-2"></i>Instrucciones</h5>
+            <p class="card-text text-muted small mb-2">Di el pedido completo en un solo dictado:</p>
+
+            <div class="mb-3">
+              <span class="badge bg-secondary mb-1">Formato base</span>
+              <p class="small text-muted mb-0">
+                <em>«Pedido para [Nombre], fecha de recogida [fecha], teléfono [número], [productos]»</em>
+              </p>
+            </div>
+
+            <span class="badge bg-secondary mb-2">Ejemplos completos</span>
+            <ul class="list-group list-group-flush small">
+              <li class="list-group-item bg-transparent px-0 py-2">
+                🗣 <em>«Pedido para Ana García, fecha de recogida 5 de marzo, teléfono 612345678, dos kilos de filetes de babilla finos, un kilo de carne picada y medio kilo de jamón ibérico»</em>
+              </li>
+              <li class="list-group-item bg-transparent px-0 py-2">
+                🗣 <em>«Pedido para Carlos Ruiz, teléfono 698765432, fecha de recogida día 10, un chuletón para parrilla, 500 gramos de solomillo y tres unidades de cachopos»</em>
+              </li>
+              <li class="list-group-item bg-transparent px-0 py-2">
+                🗣 <em>«Pedido para Lucía, teléfono seis uno dos cinco ocho siete nueve uno cuatro, recogida día 28, un kilo de filetes tiernos, medio kilo de redondo para asar, compango de fabada para cuatro personas»</em>
+              </li>
             </ul>
+
+            <div class="mt-3">
+              <span class="badge bg-secondary mb-1">Cortes disponibles</span>
+              <p class="small text-muted mb-0">Solomillo · Lomo Alto · Lomo Bajo · Babilla · Cadera · Tapa · Redondo · Contra · Chuletón · Filetes</p>
+            </div>
           </div>
         </div>
       </div>
