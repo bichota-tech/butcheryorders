@@ -19,10 +19,17 @@ export const extractOrderIntent = (transcript) => {
 
     // Split product list by:
     // 1. "y" or ","
-    // 2. A digit+unit pattern that starts a new product (e.g. "...ternera 300 gr de jamón...")
-    const NUMERIC_QTY_BOUNDARY = /\s+(?=\d+(?:[.,]\d+)?\s+(?:kilos?|kg|gramos?|gr?\b|unidades?))/i
+    // 2. New product boundary: digit OR word-quantity followed by a unit keyword
+    //    e.g. "...ternera 300 gr..."   → split before "300 gr"
+    //    e.g. "...tiernos medio kilo..." → split before "medio kilo"
+    const UNITS = '(?:kilos?|kg|gramos?|grs?\\b|g\\b|unidades?)'
+    const WORD_QTYS = '(?:medio|media|un|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)'
+    const PRODUCT_BOUNDARY = new RegExp(
+        `\\s+(?=(?:\\d+(?:[.,]\\d+)?|${WORD_QTYS})\\s+${UNITS})`,
+        'i'
+    )
     const segments = productText.split(/\s+y\s+|,\s*/).flatMap(seg =>
-        seg.split(NUMERIC_QTY_BOUNDARY)
+        seg.split(PRODUCT_BOUNDARY)
     ).map(s => s.trim()).filter(Boolean)
 
     // Command patterns (check on full text, not segments)
