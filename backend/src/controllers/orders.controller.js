@@ -74,3 +74,17 @@ export const deleteOrder = async (req, res, next) => {
         next(error)
     }
 }
+
+export const archiveOrder = async (req, res, next) => {
+    try {
+        const userId = req.user.id
+        const { id } = req.params
+        const isAdmin = req.user.role === 'ADMIN'
+
+        const order = await ordersService.archiveOrder(id, userId, isAdmin)
+
+        res.json(successResponse(order, 'Order archived'))
+    } catch (error) {
+        next(error)
+    }
+}

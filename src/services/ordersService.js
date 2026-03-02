@@ -34,3 +34,8 @@ export const deleteOrder = async (orderId) => {
     const response = await api.delete(`/orders/${orderId}`)
     return response.data.data
 }
+
+export const archiveOrder = async (orderId) => {
+    const response = await api.patch(`/orders/${orderId}/archive`)
+    return response.data.data
+}

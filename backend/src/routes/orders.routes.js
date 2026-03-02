@@ -12,6 +12,7 @@ router.use(authenticateToken)
 router.post('/', validate(createOrderSchema), ordersController.createOrder)
 router.get('/', ordersController.getOrders)
 router.get('/:id', ordersController.getOrder)
+router.patch('/:id/archive', ordersController.archiveOrder)
 router.patch('/:id', validate(updateOrderSchema), ordersController.updateOrder)
 router.delete('/:id', ordersController.deleteOrder)
 
