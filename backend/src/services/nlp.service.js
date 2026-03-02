@@ -23,6 +23,8 @@ export const extractOrderIntent = (transcript) => {
         [/\bcon\s+pango\b/gi, 'compango'],
         [/\bpon\s+pango\b/gi, 'compango'],
         [/\bcon\s+pan\s+go\b/gi, 'compango'],
+        [/\bcompan\s+go\b/gi, 'compango'],
+        [/\bcom\s+pango\b/gi, 'compango'],
     ]
     for (const [pattern, fix] of STT_CORRECTIONS) productText = productText.replace(pattern, fix)
 
@@ -100,6 +102,16 @@ export const extractOrderIntent = (transcript) => {
 
     // Product patterns - applied to each segment independently
     const productPatterns = [
+        {
+            // Special: "para X caldo" / "para X cocido" / "para X cocido asturiano"
+            // Voice pattern: "para cuatro caldo", "para dos cocido"
+            regex: /^para\s+(\d+|medio|media|un|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\s+(caldo|cocido|cocido\s+asturiano)(?:\s+.*)?$/i,
+            extract: (match) => ({
+                quantity: (quantityMap[match[1].toLowerCase()] ?? parseInt(match[1])) || 1,
+                unit: 'units',
+                product: match[2].toLowerCase().startsWith('cocido') ? 'cocido' : 'caldo'
+            })
+        },
         {
             // "2 kilos de carne roja", "3 kg de pollo", "1,5 kilos de ternera"
             regex: /(\d+(?:[.,]\d+)?)\s*(kilos?|kg)\s+(?:de\s+)?([a-záéíóúñ\s]+)/i,

@@ -85,21 +85,32 @@ export function useVoiceRecording() {
         return true
     }
 
+    let isStarting = false
+
     function startRecording() {
+        if (isStarting) return
         if (!recognition.value && !initRecognition()) {
             return
         }
 
-        try {
-            recognition.value.start()
-        } catch (error) {
-            // Already started
-            if (error.message.includes('already started')) {
-                console.warn('Recognition already started')
-            } else {
-                voiceStore.setError(error.message)
+        // Clear previous error before attempting new recording
+        voiceStore.setError(null)
+        isStarting = true
+
+        setTimeout(() => {
+            try {
+                recognition.value.start()
+            } catch (error) {
+                // Already started
+                if (error.message.includes('already started')) {
+                    console.warn('Recognition already started')
+                } else {
+                    voiceStore.setError(error.message)
+                }
+            } finally {
+                isStarting = false
             }
-        }
+        }, 300)
     }
 
     function stopRecording() {
