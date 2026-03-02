@@ -34,3 +34,12 @@ coverage
 
 # Vitest
 __screenshots__/
+
+# Secrets — never commit tokens
+mcp.json
+
+# Kanban/utility scripts (local only)
+kanban-*.js
+kanban-*.txt
+fix-kanban.js
+update-kanban-states.js

@@ -21,12 +21,19 @@ const newProducts = [
     { id: 'redondo', name: 'Redondo', category: 'Ternera', unit: 'kg', pricePerUnit: 0 },
     { id: 'chuleton', name: 'Chuletón', category: 'Ternera', unit: 'kg', pricePerUnit: 0 },
     { id: 'carne-picada', name: 'Carne Picada', category: 'Ternera', unit: 'kg', pricePerUnit: 0 },
+    { id: 'rabo', name: 'Rabo', category: 'Ternera', unit: 'kg', pricePerUnit: 0 },
+    { id: 'higado-de-ternera', name: 'Hígado de Ternera', category: 'Ternera', unit: 'kg', pricePerUnit: 0 },
+    { id: 'rosbif', name: 'Rosbif', category: 'Ternera', unit: 'kg', pricePerUnit: 0 },
     // ── Poultry ─────────────────────────────────────────────────────────────
     { id: 'pollo-entero', name: 'Pollo Entero', category: 'Aves', unit: 'units', pricePerUnit: 0 },
     // ── Pork & Charcuterie ──────────────────────────────────────────────────
     { id: 'compango', name: 'Compango', category: 'Cerdo', unit: 'units', pricePerUnit: 0 },
     { id: 'picadillo', name: 'Picadillo', category: 'Cerdo', unit: 'kg', pricePerUnit: 0 },
     { id: 'chorizo', name: 'Chorizo', category: 'Embutidos', unit: 'kg', pricePerUnit: 0 },
+    // ── Preparados ───────────────────────────────────────────────────────────
+    { id: 'jamon-iberico', name: 'Jamón Ibérico', category: 'Embutidos', unit: 'kg', pricePerUnit: 0 },
+    { id: 'caldo', name: 'Caldo', category: 'Preparados', unit: 'units', pricePerUnit: 0 },
+    { id: 'cocido', name: 'Cocido', category: 'Preparados', unit: 'units', pricePerUnit: 0 },
 ]
 
 async function main() {

@@ -25,6 +25,7 @@
                 <option value="CONFIRMED">Confirmado</option>
                 <option value="COMPLETED">Completado</option>
                 <option value="CANCELLED">Cancelado</option>
+                <option value="ARCHIVED">Archivados</option>
             </select>
         </div>
         <div class="col-md-3">
@@ -136,6 +137,7 @@ function getStatusClass(status) {
     case 'CONFIRMED': return 'bg-primary'
     case 'COMPLETED': return 'bg-success'
     case 'CANCELLED': return 'bg-danger'
+    case 'ARCHIVED': return 'bg-secondary'
     default: return 'bg-secondary'
   }
 }
@@ -145,7 +147,8 @@ function formatStatus(status) {
     'PENDING': 'Pendiente',
     'CONFIRMED': 'Confirmado',
     'COMPLETED': 'Completado',
-    'CANCELLED': 'Cancelado'
+    'CANCELLED': 'Cancelado',
+    'ARCHIVED': '📦 Archivado'
   }
   return map[status] || status
 }

@@ -10,7 +10,27 @@ const numberMap = {
     'veinte': 20, 'veintiuno': 21, 'veintiún': 21, 'veintidos': 22, 'veintidós': 22,
     'veintitres': 23, 'veintitrés': 23, 'veinticuatro': 24, 'veinticinco': 25,
     'veintiseis': 26, 'veintiséis': 26, 'veintisiete': 27, 'veintiocho': 28, 'veintinueve': 29,
-    'treinta': 30, 'treinta y uno': 31, 'treinta y una': 31
+    'treinta': 30, 'treinta y uno': 31, 'treinta y una': 31, 'treinta y dos': 32,
+    'treinta y tres': 33, 'treinta y cuatro': 34, 'treinta y cinco': 35,
+    'treinta y seis': 36, 'treinta y siete': 37, 'treinta y ocho': 38, 'treinta y nueve': 39,
+    'cuarenta': 40, 'cuarenta y uno': 41, 'cuarenta y una': 41, 'cuarenta y dos': 42,
+    'cuarenta y tres': 43, 'cuarenta y cuatro': 44, 'cuarenta y cinco': 45,
+    'cuarenta y seis': 46, 'cuarenta y siete': 47, 'cuarenta y ocho': 48, 'cuarenta y nueve': 49,
+    'cincuenta': 50, 'cincuenta y uno': 51, 'cincuenta y una': 51, 'cincuenta y dos': 52,
+    'cincuenta y tres': 53, 'cincuenta y cuatro': 54, 'cincuenta y cinco': 55,
+    'cincuenta y seis': 56, 'cincuenta y siete': 57, 'cincuenta y ocho': 58, 'cincuenta y nueve': 59,
+    'sesenta': 60, 'sesenta y uno': 61, 'sesenta y una': 61, 'sesenta y dos': 62,
+    'sesenta y tres': 63, 'sesenta y cuatro': 64, 'sesenta y cinco': 65,
+    'sesenta y seis': 66, 'sesenta y siete': 67, 'sesenta y ocho': 68, 'sesenta y nueve': 69,
+    'setenta': 70, 'setenta y uno': 71, 'setenta y una': 71, 'setenta y dos': 72,
+    'setenta y tres': 73, 'setenta y cuatro': 74, 'setenta y cinco': 75,
+    'setenta y seis': 76, 'setenta y siete': 77, 'setenta y ocho': 78, 'setenta y nueve': 79,
+    'ochenta': 80, 'ochenta y uno': 81, 'ochenta y una': 81, 'ochenta y dos': 82,
+    'ochenta y tres': 83, 'ochenta y cuatro': 84, 'ochenta y cinco': 85,
+    'ochenta y seis': 86, 'ochenta y siete': 87, 'ochenta y ocho': 88, 'ochenta y nueve': 89,
+    'noventa': 90, 'noventa y uno': 91, 'noventa y una': 91, 'noventa y dos': 92,
+    'noventa y tres': 93, 'noventa y cuatro': 94, 'noventa y cinco': 95,
+    'noventa y seis': 96, 'noventa y siete': 97, 'noventa y ocho': 98, 'noventa y nueve': 99,
 }
 
 const monthMap = {
@@ -102,12 +122,31 @@ export function tokenToDigits(token) {
 }
 
 export const wordsToPhone = (text) => {
-    const words = text.toLowerCase().trim().split(/[\s\-]+/)
+    const lowerText = text.toLowerCase().trim()
+    // First try multi-word tokens (e.g. "cincuenta y seis" → 56) before splitting
+    // by scanning for longest numberMap key match at each position
     let phone = ''
-    for (const word of words) {
-        const d = tokenToDigits(word)
-        if (d !== null) phone += d
-        if (phone.length >= 12) break
+    let i = 0
+    const words = lowerText.split(/\s+/)
+    while (i < words.length && phone.length < 12) {
+        // Try 3-word, 2-word, 1-word tokens (longest match first)
+        let matched = false
+        for (const len of [3, 2, 1]) {
+            if (i + len > words.length) continue
+            const candidate = words.slice(i, i + len).join(' ')
+            const digits = tokenToDigits(candidate)
+            if (digits !== null) {
+                phone += digits
+                i += len
+                matched = true
+                break
+            }
+        }
+        if (!matched) {
+            // Non-numeric token: if we already have digits, stop; else skip
+            if (phone.length > 0) break
+            i++
+        }
     }
     return phone.length >= 9 ? phone.slice(0, 12) : null
 }
@@ -165,30 +204,40 @@ export const segmentTranscript = (transcript) => {
         }
     }
 
-    // ── Phone (token-by-token, stops at exactly 9 digits) ─────────────────────
+    // ── Phone (longest-match multi-word, stops at 9 digits) ─────────────────────
     const phoneKwM = text.match(/(?:tel[eé]fonos?|tlf|móvil)\s+/i)
     if (phoneKwM) {
         const afterKw = text.slice(phoneKwM.index + phoneKwM[0].length)
-        const tokens = afterKw.split(/\s+/)
+        const words = afterKw.split(/\s+/)
         let phone = ''
-        let consumedCount = 0
+        let i = 0
+        let consumed = 0 // character count consumed from afterKw
 
-        for (const token of tokens) {
-            const digits = tokenToDigits(token)
-            if (digits === null) {
-                if (phone.length > 0) break
-                consumedCount++
-                continue
+        while (i < words.length && phone.length < 12) {
+            let matched = false
+            for (const len of [3, 2, 1]) {
+                if (i + len > words.length) continue
+                const candidate = words.slice(i, i + len).join(' ')
+                const digits = tokenToDigits(candidate)
+                if (digits !== null) {
+                    phone += digits
+                    // Count chars: words + spaces between them
+                    consumed += words.slice(i, i + len).join(' ').length + (i + len < words.length ? 1 : 0)
+                    i += len
+                    matched = true
+                    break
+                }
             }
-            phone += digits
-            consumedCount++
-            if (phone.length >= 9) break
+            if (!matched) {
+                if (phone.length > 0) break // non-numeric after digits → done
+                consumed += words[i].length + 1
+                i++
+            }
         }
 
         if (phone.length >= 9) result.phoneText = phone.slice(0, 12)
 
-        const consumedText = tokens.slice(0, consumedCount).join(' ')
-        const phoneEndInFull = phoneKwM.index + phoneKwM[0].length + consumedText.length
+        const phoneEndInFull = phoneKwM.index + phoneKwM[0].length + consumed
         lastMetaEnd = Math.max(lastMetaEnd, phoneEndInFull)
     }
 

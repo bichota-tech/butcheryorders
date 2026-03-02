@@ -65,7 +65,11 @@ export const getUserOrders = async (userId, page = 1, limit = 10, filters = {}) 
     const skip = (page - 1) * limit
     const { startDate, endDate, productId, status } = filters
 
-    const where = { userId }
+    const where = {
+        userId,
+        // By default exclude ARCHIVED orders (only show when explicitly filtered)
+        ...(status ? { status } : { status: { not: 'ARCHIVED' } })
+    }
 
     // Date filtering - parse as local dates to avoid timezone issues
     if (startDate || endDate) {
@@ -80,30 +84,17 @@ export const getUserOrders = async (userId, page = 1, limit = 10, filters = {}) 
         }
     }
 
-    // Status filtering
-    if (status) {
-        where.status = status
-    }
-
     // Product filtering (orders containing specific product)
     if (productId) {
         where.items = {
-            some: {
-                productId: productId
-            }
+            some: { productId }
         }
     }
 
     const [orders, total] = await Promise.all([
         prisma.order.findMany({
             where,
-            include: {
-                items: {
-                    include: {
-                        product: true
-                    }
-                }
-            },
+            include: { items: { include: { product: true } } },
             orderBy: { createdAt: 'desc' },
             skip,
             take: limit
@@ -114,7 +105,35 @@ export const getUserOrders = async (userId, page = 1, limit = 10, filters = {}) 
     return { orders, total, page, limit }
 }
 
+export const archiveOrder = async (orderId, userId, isAdmin = false) => {
+    const order = await prisma.order.findFirst({
+        where: isAdmin ? { id: orderId } : { id: orderId, userId }
+    })
+
+    if (!order) {
+        const error = new Error('Order not found')
+        error.statusCode = 404
+        throw error
+    }
+
+    if (order.status !== 'COMPLETED' && !isAdmin) {
+        const error = new Error('Only completed orders can be archived')
+        error.statusCode = 403
+        throw error
+    }
+
+    const updatedOrder = await prisma.order.update({
+        where: { id: orderId },
+        data: { status: 'ARCHIVED' },
+        include: { items: { include: { product: true } } }
+    })
+
+    logger.info('Order archived', { orderId, userId })
+    return updatedOrder
+}
+
 export const getOrderById = async (orderId, userId) => {
+
     const order = await prisma.order.findFirst({
         where: {
             id: orderId,

@@ -80,6 +80,15 @@
            Completar Pedido
          </button>
          <button 
+           v-if="ordersStore.currentOrder.status === 'COMPLETED'"
+           @click="archiveOrder" 
+           class="btn btn-secondary"
+           :disabled="loading"
+         >
+           <i class="bi bi-archive me-1"></i>
+           Archivar
+         </button>
+         <button 
            v-if="ordersStore.currentOrder.status === 'PENDING'"
            @click="cancelOrder" 
            class="btn btn-outline-danger"
@@ -95,6 +104,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useOrdersStore } from '@/stores/orders'
+import * as ordersService from '@/services/ordersService'
 
 const ordersStore = useOrdersStore()
 const loading = ref(false)
@@ -108,6 +118,25 @@ async function completeOrder() {
   } catch (error) {
     console.error(error)
     alert('Error al completar el pedido')
+  } finally {
+    loading.value = false
+  }
+}
+
+async function archiveOrder() {
+  if (!confirm('¿Archivar este pedido? Se ocultará de la lista principal pero podrás verlo filtrando por "Archivados".')) return
+
+  loading.value = true
+  try {
+    await ordersService.archiveOrder(ordersStore.currentOrder.id)
+    // Update local state
+    ordersStore.currentOrder.status = 'ARCHIVED'
+    // Remove from orders list
+    ordersStore.orders = ordersStore.orders.filter(o => o.id !== ordersStore.currentOrder.id)
+    ordersStore.currentOrder = null
+  } catch (error) {
+    console.error(error)
+    alert('Error al archivar el pedido')
   } finally {
     loading.value = false
   }
@@ -133,6 +162,7 @@ function getStatusClass(status) {
     case 'CONFIRMED': return 'bg-primary'
     case 'COMPLETED': return 'bg-success'
     case 'CANCELLED': return 'bg-danger'
+    case 'ARCHIVED': return 'bg-secondary'
     default: return 'bg-secondary'
   }
 }
@@ -142,7 +172,8 @@ function formatStatus(status) {
     'PENDING': 'Pendiente',
     'CONFIRMED': 'Confirmado',
     'COMPLETED': 'Completado',
-    'CANCELLED': 'Cancelado'
+    'CANCELLED': 'Cancelado',
+    'ARCHIVED': '📦 Archivado'
   }
   return map[status] || status
 }
