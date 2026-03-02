@@ -102,6 +102,11 @@ export const getUserOrders = async (userId, page = 1, limit = 10, filters = {}) 
         prisma.order.count({ where })
     ])
 
+    // Async purge of old archived orders (>6 months) — does not block response
+    purgeOldArchivedOrders(userId).catch(err =>
+        logger.warn('Failed to purge old archived orders', { userId, err: err.message })
+    )
+
     return { orders, total, page, limit }
 }
 
@@ -211,4 +216,27 @@ export const deleteOrder = async (orderId, userId, isAdmin = false) => {
     logger.info('Order deleted', { orderId, userId })
 
     return { id: orderId }
+}
+
+/**
+ * Purge ARCHIVED orders older than 6 months.
+ * Called automatically on getUserOrders to keep the DB clean.
+ */
+export const purgeOldArchivedOrders = async (userId) => {
+    const sixMonthsAgo = new Date()
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+
+    const deleted = await prisma.order.deleteMany({
+        where: {
+            userId,
+            status: 'ARCHIVED',
+            updatedAt: { lt: sixMonthsAgo }
+        }
+    })
+
+    if (deleted.count > 0) {
+        logger.info('Purged old archived orders', { userId, count: deleted.count })
+    }
+
+    return deleted.count
 }

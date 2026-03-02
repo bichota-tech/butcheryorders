@@ -138,4 +138,39 @@ span {
   display: flex;
   align-items: center;
 }
+
+/* ── Responsive tablet ──── */
+@media (max-width: 1023px) {
+  .header {
+    padding: 0.5rem;
+  }
+
+  .navbar {
+    padding: 0.4rem 0.75rem;
+    border-radius: 12px;
+  }
+
+  h1 {
+    font-size: 1.15rem;
+  }
+
+  span {
+    font-size: 0.78rem;
+  }
+
+  a {
+    font-size: 0.88rem;
+    padding: 0.4rem 0.7rem;
+  }
+
+  .user-actions .me-3 {
+    display: none; /* hide username on small screens */
+  }
+}
+
+@media (max-width: 600px) {
+  .descr span {
+    display: none;
+  }
+}
 </style>

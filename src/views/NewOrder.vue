@@ -162,15 +162,15 @@
               </p>
             </div>
 
-            <span class="badge bg-secondary mb-2">Ejemplos completos</span>
+            <span class="badge bg-secondary mb-2">Ejemplos</span>
             <ul class="list-group list-group-flush small">
               <li class="list-group-item bg-transparent px-0 py-2">
                 🗣 <em>«Pedido para Ana García, fecha de recogida 5 de marzo, teléfono 612345678, dos kilos de filetes de babilla finos, un kilo de carne picada y medio kilo de jamón ibérico»</em>
               </li>
-              <li class="list-group-item bg-transparent px-0 py-2">
+              <li class="list-group-item bg-transparent px-0 py-2 example-extra">
                 🗣 <em>«Pedido para Carlos Ruiz, teléfono 698765432, fecha de recogida día 10, un chuletón para parrilla, 500 gramos de solomillo y tres unidades de cachopos»</em>
               </li>
-              <li class="list-group-item bg-transparent px-0 py-2">
+              <li class="list-group-item bg-transparent px-0 py-2 example-extra">
                 🗣 <em>«Pedido para Lucía, teléfono seis uno dos cinco ocho siete nueve uno cuatro, recogida día 28, un kilo de filetes tiernos, medio kilo de redondo para asar, compango de fabada para cuatro personas»</em>
               </li>
             </ul>
@@ -196,6 +196,18 @@
       </div>
     </div>
 
+    <!-- Confirm Modal: datos incompletos -->
+    <ConfirmModal
+      :isOpen="showMissingDataModal"
+      title="Datos incompletos"
+      message="Faltan datos obligatorios: Nombre y Fecha de Recogida. ¿Deseas completarlos antes de confirmar?"
+      confirmText="Entendido"
+      :showCancel="false"
+      type="warning"
+      @confirm="showMissingDataModal = false"
+      @cancel="showMissingDataModal = false"
+    />
+
   </div>
 </template>
 
@@ -206,6 +218,7 @@ import { useVoiceRecording } from '@/composables/useVoiceRecording'
 import { useVoiceSessionStore } from '@/stores/voiceSession'
 import { useOrdersStore } from '@/stores/orders'
 import * as voiceService from '@/services/voiceService'
+import ConfirmModal from '@/components/Common/ConfirmModal.vue'
 
 const router = useRouter()
 const voiceStore = useVoiceSessionStore()
@@ -214,6 +227,7 @@ const { startRecording, stopRecording, toggleRecording } = useVoiceRecording()
 
 const isProcessing = ref(false)
 const showSuccessToast = ref(false)
+const showMissingDataModal = ref(false)
 
 // Client data fields
 const clientName = ref('')
@@ -259,7 +273,7 @@ async function confirmOrder() {
 
   // Validate mandatory client data (phone is optional)
   if (!clientName.value || !pickupDate.value) {
-    alert('⚠️ Faltan datos obligatorios (Nombre y Fecha de Recogida).\nPor favor, complétalos antes de confirmar.')
+    showMissingDataModal.value = true
     return
   }
 
@@ -318,6 +332,33 @@ function resetSession() {
   }
   100% {
     box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+  }
+}
+
+/* ── Tablet responsive ──── */
+@media (max-width: 1023px) {
+  /* Oculta los ejemplos 2 y 3 en tablet para reducir scroll */
+  .example-extra {
+    display: none;
+  }
+
+  /* Panel de instrucciones más compacto */
+  .col-md-4 .card-body {
+    padding: 0.85rem;
+  }
+
+  /* El row principal stack en columna en tablets pequeñas */
+  .container .row {
+    flex-direction: column;
+  }
+
+  .col-md-8, .col-md-4 {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .col-md-4 {
+    margin-top: 1rem !important;
   }
 }
 </style>

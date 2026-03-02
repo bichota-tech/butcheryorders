@@ -66,7 +66,6 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   width: 100%;
-  max-width: 800px;
 }
 
 .dashcontainer {
@@ -74,8 +73,8 @@ onMounted(() => {
   flex-direction: row;
   flex-wrap: wrap;
   justify-content: center;
-  align-items: center;
-  gap: 1.5rem;
+  align-items: stretch;
+  gap: 1rem;
   width: 100%;
 }
 
@@ -86,8 +85,8 @@ onMounted(() => {
   justify-content: left;
   column-gap: 1rem;
   padding: 1.5rem;
-  width: 30%;
-  min-width: 220px;
+  flex: 1 1 220px;
+  max-width: 300px;
   color: var(--color-secundary);
   background: white;
   border-radius: 16px;
@@ -106,6 +105,7 @@ onMounted(() => {
   border-radius: 12px;
   background-color: #f8f9fa;
   padding: 1rem;
+  flex-shrink: 0;
 }
 
 .icon i {
@@ -129,5 +129,37 @@ onMounted(() => {
   font-size: 1.5rem;
   font-weight: 800;
   color: #212529;
+}
+
+/* Tablet: 3 KPIs en una fila, reducir tamaño */
+@media (max-width: 1023px) {
+  .counter {
+    flex: 1 1 0;
+    max-width: none;
+    min-width: 0;
+    padding: 1rem;
+    column-gap: 0.6rem;
+  }
+
+  .icon {
+    padding: 0.65rem;
+  }
+
+  .icon i {
+    font-size: 1.2rem;
+  }
+
+  .content span:first-child {
+    font-size: 0.78rem;
+  }
+
+  #number span {
+    font-size: 1.3rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashcontainer { flex-direction: column; }
+  .counter { max-width: none; }
 }
 </style>

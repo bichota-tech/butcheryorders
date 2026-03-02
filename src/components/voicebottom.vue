@@ -36,4 +36,19 @@
   background-color: #0b5ed7;
   color: white;
 }
+
+/* Tablet: ancho completo, padding ajustado */
+@media (max-width: 1023px) {
+  .voice-bottom {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .voice-button {
+    padding: 1.5rem 1rem;
+    font-size: 1.2rem;
+    border-radius: 16px;
+  }
+}
 </style>

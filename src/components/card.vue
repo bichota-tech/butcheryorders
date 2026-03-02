@@ -18,85 +18,122 @@
         </div>
       </div>
 
-      <div class="card-body p-4 overflow-auto">
-        <!-- Client Info -->
-        <div class="mb-4 p-3 bg-light rounded" v-if="ordersStore.currentOrder.clientName || ordersStore.currentOrder.clientPhone">
-          <h6 class="fw-bold mb-2"><i class="bi bi-person-fill me-1"></i> Datos del Cliente</h6>
-          <div class="row g-2">
-            <div class="col-6" v-if="ordersStore.currentOrder.clientName">
-              <small class="text-muted d-block">Nombre</small>
-              <span class="fw-bold">{{ ordersStore.currentOrder.clientName }}</span>
+      <div class="card-body p-3">
+        <div class="detail-grid">
+          <!-- COLUMNA 1: Datos del cliente + Productos -->
+          <div class="detail-col detail-col-left">
+            <!-- Client Info -->
+            <div class="mb-3 p-3 bg-light rounded" v-if="ordersStore.currentOrder.clientName || ordersStore.currentOrder.clientPhone">
+              <h6 class="fw-bold mb-2"><i class="bi bi-person-fill me-1"></i> Datos del Cliente</h6>
+              <div class="row g-2">
+                <div class="col-6" v-if="ordersStore.currentOrder.clientName">
+                  <small class="text-muted d-block">Nombre</small>
+                  <span class="fw-bold">{{ ordersStore.currentOrder.clientName }}</span>
+                </div>
+                <div class="col-6" v-if="ordersStore.currentOrder.clientPhone">
+                  <small class="text-muted d-block">Teléfono</small>
+                  <span class="fw-bold">{{ ordersStore.currentOrder.clientPhone }}</span>
+                </div>
+                <div class="col-6" v-if="ordersStore.currentOrder.pickupDate">
+                  <small class="text-muted d-block">Fecha de Recogida</small>
+                  <span class="fw-bold">{{ formatPickupDate(ordersStore.currentOrder.pickupDate) }}</span>
+                </div>
+              </div>
             </div>
-            <div class="col-6" v-if="ordersStore.currentOrder.clientPhone">
-              <small class="text-muted d-block">Teléfono</small>
-              <span class="fw-bold">{{ ordersStore.currentOrder.clientPhone }}</span>
+
+            <h5 class="mb-2">Productos</h5>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle table-sm">
+                <thead class="table-light">
+                  <tr>
+                    <th>Producto</th>
+                    <th class="text-center">Cant.</th>
+                    <th class="text-center">Unidad</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="item in ordersStore.currentOrder.items" :key="item.id">
+                    <td>
+                      {{ item.product?.name || 'Producto desconocido' }}
+                      <div v-if="item.notes" class="text-muted small fst-italic">
+                        <i class="bi bi-info-circle me-1"></i>{{ item.notes }}
+                      </div>
+                    </td>
+                    <td class="text-center">{{ item.quantity }}</td>
+                    <td class="text-center">{{ item.unit }}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-            <div class="col-6" v-if="ordersStore.currentOrder.pickupDate">
-              <small class="text-muted d-block">Fecha de Recogida</small>
-              <span class="fw-bold">{{ formatPickupDate(ordersStore.currentOrder.pickupDate) }}</span>
+          </div>
+
+          <!-- COLUMNA 2: Transcripción + Botones -->
+          <div class="detail-col detail-col-right">
+            <div v-if="ordersStore.currentOrder.transcript" class="mb-3 p-3 bg-light rounded">
+              <label class="fw-bold small text-muted mb-1">Transcripción original:</label>
+              <p class="mb-0 fst-italic small">"{{ ordersStore.currentOrder.transcript }}"</p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="actions-area">
+              <button
+                v-if="ordersStore.currentOrder.status === 'PENDING'"
+                @click="openModal('complete')"
+                class="btn btn-success w-100 mb-2"
+                :disabled="loading"
+              >
+                <i class="bi bi-check2-circle me-1"></i> Completar Pedido
+              </button>
+              <button
+                v-if="ordersStore.currentOrder.status === 'COMPLETED'"
+                @click="openModal('archive')"
+                class="btn btn-secondary w-100 mb-2"
+                :disabled="loading"
+              >
+                <i class="bi bi-archive me-1"></i> Archivar
+              </button>
+              <button
+                v-if="ordersStore.currentOrder.status === 'PENDING'"
+                @click="openModal('cancel')"
+                class="btn btn-outline-danger w-100"
+                :disabled="loading"
+              >
+                Cancelar Pedido
+              </button>
             </div>
           </div>
         </div>
 
-        <h5 class="mb-3">Productos</h5>
-        <div class="table-responsive">
-          <table class="table table-hover align-middle">
-            <thead class="table-light">
-              <tr>
-                <th>Producto</th>
-                <th class="text-center">Cant.</th>
-                <th class="text-center">Unidad</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="item in ordersStore.currentOrder.items" :key="item.id">
-                <td>
-                  {{ item.product?.name || 'Producto desconocido' }}
-                  <div v-if="item.notes" class="text-muted small fst-italic">
-                    <i class="bi bi-info-circle me-1"></i>{{ item.notes }}
-                  </div>
-                </td>
-                <td class="text-center">{{ item.quantity }}</td>
-                <td class="text-center">{{ item.unit }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        
-        <div v-if="ordersStore.currentOrder.transcript" class="mt-4 p-3 bg-light rounded">
-          <label class="fw-bold small text-muted mb-1">Transcripción original:</label>
-          <p class="mb-0 fst-italic">"{{ ordersStore.currentOrder.transcript }}"</p>
-        </div>
-      </div>
+      </div><!-- end card-body grid -->
 
-      <div class="card-footer bg-white border-top p-3 d-flex justify-content-end gap-2">
-         <button 
-           v-if="ordersStore.currentOrder.status === 'PENDING'"
-           @click="completeOrder" 
-           class="btn btn-success"
-           :disabled="loading"
-         >
-           <i class="bi bi-check2-circle me-1"></i>
-           Completar Pedido
-         </button>
-         <button 
-           v-if="ordersStore.currentOrder.status === 'COMPLETED'"
-           @click="archiveOrder" 
-           class="btn btn-secondary"
-           :disabled="loading"
-         >
-           <i class="bi bi-archive me-1"></i>
-           Archivar
-         </button>
-         <button 
-           v-if="ordersStore.currentOrder.status === 'PENDING'"
-           @click="cancelOrder" 
-           class="btn btn-outline-danger"
-           :disabled="loading"
-         >
-           Cancelar Pedido
-         </button>
-      </div>
+      <!-- Confirm Modals -->
+      <ConfirmModal
+        :isOpen="modal.action === 'complete'"
+        title="Completar Pedido"
+        message="¿Marcar este pedido como completado?"
+        confirmText="Sí, completar"
+        type="success"
+        @confirm="executeAction"
+        @cancel="closeModal"
+      />
+      <ConfirmModal
+        :isOpen="modal.action === 'archive'"
+        title="Archivar Pedido"
+        message="El pedido se ocultará de la lista principal pero podrás verlo filtrando por 'Archivados'."
+        confirmText="Archivar"
+        type="warning"
+        @confirm="executeAction"
+        @cancel="closeModal"
+      />
+      <ConfirmModal
+        :isOpen="modal.action === 'cancel'"
+        title="Cancelar Pedido"
+        message="¿Estás seguro? Esta acción no se puede deshacer."
+        confirmText="Sí, cancelar"
+        type="danger"
+        @confirm="executeAction"
+        @cancel="closeModal"
+      />
     </div>
   </section>
 </template>
@@ -105,52 +142,54 @@
 import { ref } from 'vue'
 import { useOrdersStore } from '@/stores/orders'
 import * as ordersService from '@/services/ordersService'
+import ConfirmModal from '@/components/Common/ConfirmModal.vue'
 
 const ordersStore = useOrdersStore()
 const loading = ref(false)
+const modal = ref({ action: null })
+
+function openModal(action) { modal.value.action = action }
+function closeModal()      { modal.value.action = null }
+
+async function executeAction() {
+  const action = modal.value.action
+  closeModal()
+
+  if (action === 'complete') await completeOrder()
+  else if (action === 'archive') await archiveOrder()
+  else if (action === 'cancel')  await cancelOrder()
+}
 
 async function completeOrder() {
-  if (!confirm('¿Marcar este pedido como completado?')) return
-  
   loading.value = true
   try {
     await ordersStore.updateOrder(ordersStore.currentOrder.id, 'COMPLETED')
   } catch (error) {
     console.error(error)
-    alert('Error al completar el pedido')
   } finally {
     loading.value = false
   }
 }
 
 async function archiveOrder() {
-  if (!confirm('¿Archivar este pedido? Se ocultará de la lista principal pero podrás verlo filtrando por "Archivados".')) return
-
   loading.value = true
   try {
     await ordersService.archiveOrder(ordersStore.currentOrder.id)
-    // Update local state
-    ordersStore.currentOrder.status = 'ARCHIVED'
-    // Remove from orders list
     ordersStore.orders = ordersStore.orders.filter(o => o.id !== ordersStore.currentOrder.id)
     ordersStore.currentOrder = null
   } catch (error) {
     console.error(error)
-    alert('Error al archivar el pedido')
   } finally {
     loading.value = false
   }
 }
 
 async function cancelOrder() {
-  if (!confirm('¿Estás seguro de que quieres cancelar este pedido?')) return
-  
   loading.value = true
   try {
     await ordersStore.deleteOrder(ordersStore.currentOrder.id)
   } catch (error) {
     console.error(error)
-    alert('Error al cancelar el pedido')
   } finally {
     loading.value = false
   }
@@ -193,9 +232,10 @@ function formatPickupDate(dateString) {
 .orderdetails {
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   width: 50%;
   height: 80vh;
+  overflow-y: auto;
 }
 
 .empty-state {
@@ -208,5 +248,46 @@ function formatPickupDate(dateString) {
   background-color: #f8f9fa;
   border-radius: 12px;
   border: 2px dashed #dee2e6;
+}
+
+/* ── Detail grid: single column on mobile/desktop, 2 columns on tablet ─ */
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.actions-area {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Desktop: keep side-by-side panel layout but card stays in 1 column */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .orderdetails {
+    width: 100%;
+    height: auto;
+    min-height: 60vh;
+    align-items: stretch;
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    align-items: start;
+  }
+
+  .detail-col-left,
+  .detail-col-right {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .detail-col-right {
+    border-left: 1px solid #f0f0f0;
+    padding-left: 1.25rem;
+  }
 }
 </style>

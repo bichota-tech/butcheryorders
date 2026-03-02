@@ -127,8 +127,11 @@ function clearFilters() {
     }, 0)
 }
 
+const emit = defineEmits(['order-selected'])
+
 function selectOrder(order) {
   ordersStore.currentOrder = order
+  emit('order-selected', order)
 }
 
 function getStatusClass(status) {
@@ -242,5 +245,34 @@ h3 {
 .order-date {
   font-size: 0.8rem;
   color: #999;
+}
+
+/* ── Responsive tablet ──── */
+@media (max-width: 1023px) {
+  .listcontainer {
+    width: 100%;
+    height: auto;
+    max-height: 70vh;
+    padding-right: 0;
+  }
+
+  .order-item {
+    padding: 0.85rem 1rem;
+  }
+
+  .header-actions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .header-actions .d-flex {
+    width: 100%;
+  }
+
+  .header-actions select,
+  .header-actions input {
+    font-size: 0.9rem;
+  }
 }
 </style>

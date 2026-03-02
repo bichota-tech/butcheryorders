@@ -204,7 +204,7 @@ export const segmentTranscript = (transcript) => {
         }
     }
 
-    // ── Phone (longest-match multi-word, stops at 9 digits) ─────────────────────
+    // ── Phone (longest-match multi-word, stops at exactly 9 digits) ─────────────
     const phoneKwM = text.match(/(?:tel[eé]fonos?|tlf|móvil)\s+/i)
     if (phoneKwM) {
         const afterKw = text.slice(phoneKwM.index + phoneKwM[0].length)
@@ -213,13 +213,15 @@ export const segmentTranscript = (transcript) => {
         let i = 0
         let consumed = 0 // character count consumed from afterKw
 
-        while (i < words.length && phone.length < 12) {
+        while (i < words.length && phone.length < 9) {  // Stop exactly at 9 digits
             let matched = false
             for (const len of [3, 2, 1]) {
                 if (i + len > words.length) continue
                 const candidate = words.slice(i, i + len).join(' ')
                 const digits = tokenToDigits(candidate)
                 if (digits !== null) {
+                    // Don't overshoot: skip this token if adding it would exceed 9 digits
+                    if (phone.length + digits.length > 9) break
                     phone += digits
                     // Count chars: words + spaces between them
                     consumed += words.slice(i, i + len).join(' ').length + (i + len < words.length ? 1 : 0)
