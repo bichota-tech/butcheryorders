@@ -22,19 +22,50 @@
             <select class="form-select form-select-sm" v-model="ordersStore.filters.status">
                 <option value="">Todos los estados</option>
                 <option value="PENDING">Pendiente</option>
-                <option value="CONFIRMED">Confirmado</option>
                 <option value="COMPLETED">Completado</option>
                 <option value="CANCELLED">Cancelado</option>
                 <option value="ARCHIVED">Archivados</option>
             </select>
         </div>
-        <div class="col-md-3">
-            <select class="form-select form-select-sm" v-model="ordersStore.filters.productId">
-                <option value="">Todos los productos</option>
-                <option v-for="product in products" :key="product.id" :value="product.id">
-                    {{ product.name }}
-                </option>
-            </select>
+        <!-- Multi-product filter -->
+        <div class="col-md-3 position-relative" ref="productDropdownRef">
+          <button
+            type="button"
+            class="form-select form-select-sm text-start"
+            @click="showProductDropdown = !showProductDropdown"
+            :class="{ 'border-primary': selectedProductIds.length > 0 }"
+          >
+            <span v-if="selectedProductIds.length === 0" class="text-muted">Todos los productos</span>
+            <span v-else class="fw-bold text-primary">{{ selectedProductIds.length }} producto{{ selectedProductIds.length !== 1 ? 's' : '' }}</span>
+          </button>
+          <!-- Dropdown panel -->
+          <div v-if="showProductDropdown" class="product-dropdown-panel shadow">
+            <div class="product-dropdown-search">
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                v-model="productSearch"
+                placeholder="Buscar producto..."
+                @click.stop
+              >
+            </div>
+            <div class="product-dropdown-list">
+              <label
+                v-for="product in filteredProducts"
+                :key="product.id"
+                class="product-dropdown-item"
+                @click.stop
+              >
+                <input type="checkbox" :value="product.id" v-model="selectedProductIds" @click.stop>
+                <span>{{ product.name }}</span>
+              </label>
+            </div>
+            <div class="product-dropdown-footer" v-if="selectedProductIds.length > 0">
+              <button class="btn btn-sm btn-link text-danger p-0" @click.stop="selectedProductIds = []">
+                Limpiar selección
+              </button>
+            </div>
+          </div>
         </div>
         <div class="col-12 d-flex justify-content-end gap-2 mt-2">
              <button class="btn btn-sm btn-outline-secondary" @click="clearFilters">Limpiar</button>
@@ -100,19 +131,41 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed, onBeforeUnmount } from 'vue'
 import { useOrdersStore } from '@/stores/orders'
 import { getProducts } from '@/services/productsService'
 
 const ordersStore = useOrdersStore()
 const products = ref([])
+const selectedProductIds = ref([])
+const productSearch = ref('')
+const showProductDropdown = ref(false)
+const productDropdownRef = ref(null)
+
+const filteredProducts = computed(() => {
+  if (!productSearch.value.trim()) return products.value
+  const q = productSearch.value.toLowerCase()
+  return products.value.filter(p => p.name.toLowerCase().includes(q))
+})
+
+function handleOutsideClick(e) {
+  if (productDropdownRef.value && !productDropdownRef.value.contains(e.target)) {
+    showProductDropdown.value = false
+  }
+}
 
 onMounted(async () => {
   ordersStore.fetchOrders()
   products.value = await getProducts()
+  document.addEventListener('click', handleOutsideClick)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleOutsideClick)
 })
 
 function applyFilters() {
+  ordersStore.filters.productIds = selectedProductIds.value
   ordersStore.fetchOrders(1)
 }
 
@@ -120,8 +173,8 @@ function clearFilters() {
     ordersStore.filters.startDate = ''
     ordersStore.filters.endDate = ''
     ordersStore.filters.status = ''
-    ordersStore.filters.productId = ''
-    // Use nextTick-like approach: ensure filters are cleared before fetching
+    ordersStore.filters.productIds = []
+    selectedProductIds.value = []
     setTimeout(() => {
         ordersStore.fetchOrders(1)
     }, 0)
@@ -274,5 +327,56 @@ h3 {
   .header-actions input {
     font-size: 0.9rem;
   }
+}
+
+/* ── Multi-product dropdown ──── */
+.product-dropdown-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 280px;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  z-index: 100;
+  overflow: hidden;
+}
+
+.product-dropdown-search {
+  padding: 0.5rem;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.product-dropdown-list {
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 0.25rem 0;
+}
+
+.product-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.15s;
+}
+
+.product-dropdown-item:hover {
+  background: #f0f7ff;
+}
+
+.product-dropdown-item input[type="checkbox"] {
+  flex-shrink: 0;
+  accent-color: var(--color-primary, #0d6efd);
+}
+
+.product-dropdown-footer {
+  padding: 0.4rem 0.75rem;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+  text-align: right;
 }
 </style>

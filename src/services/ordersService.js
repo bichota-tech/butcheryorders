@@ -7,7 +7,18 @@ export const createOrder = async (orderData) => {
 
 export const getOrders = async (page = 1, limit = 10, filters = {}) => {
     const response = await api.get('/orders', {
-        params: { page, limit, ...filters }
+        params: { page, limit, ...filters },
+        paramsSerializer: params => {
+            const parts = []
+            for (const [key, val] of Object.entries(params)) {
+                if (Array.isArray(val)) {
+                    val.forEach(v => parts.push(`${encodeURIComponent(key)}[]=${encodeURIComponent(v)}`))
+                } else {
+                    parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(val)}`)
+                }
+            }
+            return parts.join('&')
+        }
     })
     return response.data
 }

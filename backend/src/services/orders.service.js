@@ -63,7 +63,7 @@ export const createOrder = async (userId, orderData) => {
 
 export const getUserOrders = async (userId, page = 1, limit = 10, filters = {}) => {
     const skip = (page - 1) * limit
-    const { startDate, endDate, productId, status } = filters
+    const { startDate, endDate, productId, productIds, status } = filters
 
     const where = {
         userId,
@@ -84,10 +84,14 @@ export const getUserOrders = async (userId, page = 1, limit = 10, filters = {}) 
         }
     }
 
-    // Product filtering (orders containing specific product)
-    if (productId) {
+    // Product filtering — supports single productId or array of productIds
+    const ids = productIds
+        ? (Array.isArray(productIds) ? productIds : [productIds]).filter(Boolean)
+        : productId ? [productId] : []
+
+    if (ids.length > 0) {
         where.items = {
-            some: { productId }
+            some: { productId: { in: ids } }
         }
     }
 

@@ -18,7 +18,7 @@ export const useOrdersStore = defineStore('orders', () => {
         startDate: '',
         endDate: '',
         status: '',
-        productId: ''
+        productIds: []
     })
 
     const pendingOrders = computed(() => orders.value.filter((o) => o.status === 'PENDING'))
@@ -29,10 +29,13 @@ export const useOrdersStore = defineStore('orders', () => {
         error.value = null
 
         try {
-            // Clean filters
-            const cleanFilters = Object.fromEntries(
-                Object.entries(filters.value).filter(([_, v]) => v !== '' && v !== null)
-            )
+            // Clean filters — skip empty strings and empty arrays
+            const cleanFilters = {}
+            const f = filters.value
+            if (f.startDate) cleanFilters.startDate = f.startDate
+            if (f.endDate) cleanFilters.endDate = f.endDate
+            if (f.status) cleanFilters.status = f.status
+            if (f.productIds?.length > 0) cleanFilters.productIds = f.productIds
 
             const response = await ordersService.getOrders(page, limit, cleanFilters)
             orders.value = response.data

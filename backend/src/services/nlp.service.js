@@ -25,6 +25,9 @@ export const extractOrderIntent = (transcript) => {
         [/\bcon\s+pan\s+go\b/gi, 'compango'],
         [/\bcompan\s+go\b/gi, 'compango'],
         [/\bcom\s+pango\b/gi, 'compango'],
+        // "con Pango de fabada" / "con Pango de pote" variants
+        [/\bcon\s+pango\s+de\b/gi, 'compango de'],
+        [/\bcompago\b/gi, 'compango'],
     ]
     for (const [pattern, fix] of STT_CORRECTIONS) productText = productText.replace(pattern, fix)
 
@@ -102,6 +105,16 @@ export const extractOrderIntent = (transcript) => {
 
     // Product patterns - applied to each segment independently
     const productPatterns = [
+        {
+            // Special: compango de fabada/pote para X personas
+            // Voice: "compango de fabada para cuatro personas", "compango de pote para 6 personas"
+            regex: /^compango\s+(?:de\s+(?:fabada|pote|cocido)\s+)?(?:asturiano\s+)?(?:para\s+(\d+|medio|media|un|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\s+personas?)?(?:.*)?$/i,
+            extract: (match) => ({
+                quantity: match[1] ? (quantityMap[match[1].toLowerCase()] ?? parseInt(match[1])) || 1 : 1,
+                unit: 'personas',
+                product: 'compango'
+            })
+        },
         {
             // Special: "para X caldo" / "para X cocido" / "para X cocido asturiano"
             // Voice pattern: "para cuatro caldo", "para dos cocido"
