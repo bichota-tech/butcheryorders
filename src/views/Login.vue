@@ -41,7 +41,7 @@
         </form>
 
         <div class="mt-3 text-center">
-          <p class="mb-0">¿No tienes cuenta? <router-link to="/register">Regístrate</router-link></p>
+          <p class="mb-0 text-muted small"><i class="bi bi-shield-lock me-1"></i>Acceso restringido</p>
         </div>
       </div>
     </div>

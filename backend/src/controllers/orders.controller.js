@@ -18,10 +18,16 @@ export const getOrders = async (req, res, next) => {
         const page = parseInt(req.query.page) || 1
         const limit = parseInt(req.query.limit) || 10
 
+        // productIds[] can come as array or single string depending on Express qs
+        const rawProductIds = req.query['productIds[]'] || req.query.productIds
+        const productIds = rawProductIds
+            ? (Array.isArray(rawProductIds) ? rawProductIds : [rawProductIds]).filter(Boolean)
+            : []
+
         const filters = {
             startDate: req.query.startDate,
             endDate: req.query.endDate,
-            productId: req.query.productId,
+            productIds: productIds.length > 0 ? productIds : undefined,
             status: req.query.status
         }
 

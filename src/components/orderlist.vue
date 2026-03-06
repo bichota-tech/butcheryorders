@@ -12,13 +12,14 @@
     <!-- Filters -->
     <div class="filters mb-3 p-3 bg-light rounded">
       <div class="row g-2">
-        <div class="col-md-3">
+        <!-- Fila 1: fechas + estado -->
+        <div class="col-md-4">
           <input type="date" class="form-control form-control-sm" v-model="ordersStore.filters.startDate" placeholder="Desde">
         </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
           <input type="date" class="form-control form-control-sm" v-model="ordersStore.filters.endDate" placeholder="Hasta">
         </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
             <select class="form-select form-select-sm" v-model="ordersStore.filters.status">
                 <option value="">Todos los estados</option>
                 <option value="PENDING">Pendiente</option>
@@ -27,16 +28,19 @@
                 <option value="ARCHIVED">Archivados</option>
             </select>
         </div>
-        <!-- Multi-product filter -->
-        <div class="col-md-3 position-relative" ref="productDropdownRef">
+
+        <!-- Fila 2: filtro multi-producto (ancho completo) -->
+        <div class="col-12 position-relative" ref="productDropdownRef">
           <button
             type="button"
-            class="form-select form-select-sm text-start"
+            class="form-select form-select-sm text-start product-filter-btn"
             @click="showProductDropdown = !showProductDropdown"
             :class="{ 'border-primary': selectedProductIds.length > 0 }"
           >
-            <span v-if="selectedProductIds.length === 0" class="text-muted">Todos los productos</span>
-            <span v-else class="fw-bold text-primary">{{ selectedProductIds.length }} producto{{ selectedProductIds.length !== 1 ? 's' : '' }}</span>
+            <span v-if="selectedProductIds.length === 0" class="text-muted">Filtrar por producto…</span>
+            <span v-else class="fw-semibold text-primary product-filter-label">
+              {{ selectedProductNames }}
+            </span>
           </button>
           <!-- Dropdown panel -->
           <div v-if="showProductDropdown" class="product-dropdown-panel shadow">
@@ -67,7 +71,8 @@
             </div>
           </div>
         </div>
-        <div class="col-12 d-flex justify-content-end gap-2 mt-2">
+
+        <div class="col-12 d-flex justify-content-end gap-2">
              <button class="btn btn-sm btn-outline-secondary" @click="clearFilters">Limpiar</button>
              <button class="btn btn-sm btn-primary" @click="applyFilters">Filtrar</button>
         </div>
@@ -146,6 +151,15 @@ const filteredProducts = computed(() => {
   if (!productSearch.value.trim()) return products.value
   const q = productSearch.value.toLowerCase()
   return products.value.filter(p => p.name.toLowerCase().includes(q))
+})
+
+const selectedProductNames = computed(() => {
+  const names = selectedProductIds.value
+    .map(id => products.value.find(p => p.id === id)?.name)
+    .filter(Boolean)
+  if (names.length === 0) return ''
+  if (names.length <= 3) return names.join(', ')
+  return `${names.slice(0, 3).join(', ')} (+${names.length - 3} más)`
 })
 
 function handleOutsideClick(e) {
@@ -334,12 +348,23 @@ h3 {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  width: 280px;
+  width: 100%;
   background: white;
   border: 1px solid #dee2e6;
   border-radius: 8px;
   z-index: 100;
   overflow: hidden;
+}
+
+.product-filter-btn {
+  overflow: hidden;
+}
+
+.product-filter-label {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .product-dropdown-search {

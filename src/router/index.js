@@ -11,11 +11,10 @@ const routes = [
     component: () => import('@/views/Login.vue'),
     meta: { requiresGuest: true }
   },
+  // /register deshabilitado — acceso solo con credenciales pre-configuradas
   {
     path: '/register',
-    name: 'Register',
-    component: () => import('@/views/Register.vue'),
-    meta: { requiresGuest: true }
+    redirect: '/login'
   },
   {
     path: '/',

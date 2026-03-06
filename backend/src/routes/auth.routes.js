@@ -7,8 +7,10 @@ import { authenticateToken } from '../middleware/auth.js'
 
 const router = express.Router()
 
-// Public routes with rate limiting
-router.post('/register', authLimiter, validate(registerSchema), authController.register)
+// Registro deshabilitado — solo acceso con credenciales pre-configuradas
+router.post('/register', (req, res) => {
+    res.status(403).json({ success: false, message: 'El registro está deshabilitado. Contacta con el administrador.' })
+})
 router.post('/login', authLimiter, validate(loginSchema), authController.login)
 router.post('/refresh', authController.refresh)
 router.post('/logout', authController.logout)
