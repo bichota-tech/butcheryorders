@@ -5,13 +5,14 @@
     "main": "src/server.js",
     "type": "module",
     "scripts": {
-        "start": "cross-env PRISMA_CLIENT_ENGINE_TYPE=binary PRISMA_CLI_QUERY_ENGINE_TYPE=binary node src/server.js",
+        "start": "node src/server.js",
+        "build": "prisma generate",
         "dev": "cross-env PRISMA_CLIENT_ENGINE_TYPE=binary PRISMA_CLI_QUERY_ENGINE_TYPE=binary nodemon src/server.js",
         "test": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
         "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
         "migrate": "cross-env PRISMA_CLIENT_ENGINE_TYPE=binary PRISMA_CLI_QUERY_ENGINE_TYPE=binary prisma migrate dev",
-        "migrate:deploy": "cross-env PRISMA_CLIENT_ENGINE_TYPE=binary PRISMA_CLI_QUERY_ENGINE_TYPE=binary prisma migrate deploy",
-        "prisma:generate": "cross-env PRISMA_CLIENT_ENGINE_TYPE=binary PRISMA_CLI_QUERY_ENGINE_TYPE=binary prisma generate",
+        "migrate:deploy": "prisma migrate deploy",
+        "prisma:generate": "prisma generate",
         "prisma:studio": "cross-env PRISMA_CLIENT_ENGINE_TYPE=binary PRISMA_CLI_QUERY_ENGINE_TYPE=binary prisma studio",
         "seed": "node prisma/seed.js"
     },

@@ -26,13 +26,15 @@ app.use(express.urlencoded({ extended: true }))
 // Rate limiting
 app.use('/api', generalLimiter)
 
-// Request logging
+// Request logging (skip /health to avoid noise from Render health checks)
 app.use((req, res, next) => {
-    logger.info('Incoming request', {
-        method: req.method,
-        path: req.path,
-        ip: req.ip
-    })
+    if (req.path !== '/health') {
+        logger.debug('Incoming request', {
+            method: req.method,
+            path: req.path,
+            ip: req.ip
+        })
+    }
     next()
 })
 
