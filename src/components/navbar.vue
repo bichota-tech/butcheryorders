@@ -2,28 +2,42 @@
   <header class="header">
     <div class="navbar">
       <div class="logo">
-        <!-- <img src="../assets/img/logo.png" alt="Logo carnicería"> -->
         <div class="descr ps-3">
           <h1>Carnicería</h1>
           <span>Gestión de Pedidos</span>
         </div>
       </div>
-      <nav class="menu" v-if="authStore.isAuthenticated">
+      
+      <!-- Botón Hamburguesa (solo visible en móvil) -->
+      <button class="hamburger" @click="toggleMenu" v-if="authStore.isAuthenticated" aria-label="Abrir menú">
+        <span class="bar" :class="{ 'open': isMenuOpen }"></span>
+        <span class="bar" :class="{ 'open': isMenuOpen }"></span>
+        <span class="bar" :class="{ 'open': isMenuOpen }"></span>
+      </button>
+
+      <nav class="menu" :class="{ 'is-open': isMenuOpen }" v-if="authStore.isAuthenticated">
         <ul>
           <li>
-            <RouterLink to="/" active-class="active">Panel</RouterLink>
+            <RouterLink to="/" active-class="active" @click="closeMenu">Panel</RouterLink>
           </li>
           <li>
-            <RouterLink to="/pedidos" active-class="active">Pedidos</RouterLink>
+            <RouterLink to="/pedidos" active-class="active" @click="closeMenu">Pedidos</RouterLink>
           </li>
           <li>
-            <RouterLink to="/new-order" active-class="active">Nuevo Pedido</RouterLink>
+            <RouterLink to="/new-order" active-class="active" @click="closeMenu">Nuevo Pedido</RouterLink>
+          </li>
+          <!-- Botón de salir movido al menú en móvil -->
+          <li class="mobile-logout">
+            <button @click="handleLogout" class="btn btn-outline-danger btn-sm w-100">
+              <i class="bi bi-box-arrow-right"></i> Salir
+            </button>
           </li>
         </ul>
       </nav>
+      
       <div class="user-actions pe-3" v-if="authStore.isAuthenticated">
         <span class="me-3 fw-bold">{{ authStore.user?.name || 'Usuario' }}</span>
-        <button @click="handleLogout" class="btn btn-outline-danger btn-sm">
+        <button @click="handleLogout" class="btn btn-outline-danger btn-sm desktop-logout">
           <i class="bi bi-box-arrow-right"></i> Salir
         </button>
       </div>
@@ -32,18 +46,28 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
+const isMenuOpen = ref(false)
+
+function toggleMenu() {
+  isMenuOpen.value = !isMenuOpen.value
+}
+
+function closeMenu() {
+  isMenuOpen.value = false
+}
 
 function handleLogout() {
+  closeMenu()
   authStore.logout()
 }
 </script>
 
 <style scoped>
-/* Contenedor principal como flex vertical */
 .header {
   position: sticky;
   top: 0;
@@ -67,12 +91,46 @@ function handleLogout() {
   flex-wrap: nowrap;
   justify-content: space-between;
   align-items: center;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.95);
   border-radius: 16px;
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: space-around;
+  width: 2rem;
+  height: 2rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  z-index: 1001;
+}
+
+.hamburger .bar {
+  width: 2rem;
+  height: 0.25rem;
+  background: var(--color-primary, #0d6efd);
+  border-radius: 10px;
+  transition: all 0.3s linear;
+  position: relative;
+  transform-origin: 1px;
+}
+
+.bar.open:nth-child(1) {
+  transform: rotate(45deg);
+}
+.bar.open:nth-child(2) {
+  opacity: 0;
+  transform: translateX(20px);
+}
+.bar.open:nth-child(3) {
+  transform: rotate(-45deg);
 }
 
 .menu ul {
@@ -88,6 +146,10 @@ function handleLogout() {
 
 li {
   list-style: none;
+}
+
+.mobile-logout {
+  display: none;
 }
 
 a {
@@ -111,7 +173,7 @@ a:hover, a.active {
   flex-direction: row;
   align-items: center;
   column-gap: .7rem;
-  height: auto;
+  z-index: 1001;
 }
 
 .descr {
@@ -139,38 +201,93 @@ span {
   align-items: center;
 }
 
-/* ── Responsive tablet ──── */
+/* ── Responsive ──── */
 @media (max-width: 1023px) {
   .header {
     padding: 0.5rem;
   }
-
   .navbar {
     padding: 0.4rem 0.75rem;
     border-radius: 12px;
   }
+  h1 { font-size: 1.25rem; }
+  span { font-size: 0.85rem; }
+  .user-actions .me-3 { display: none; }
+}
 
-  h1 {
-    font-size: 1.15rem;
+@media (max-width: 768px) {
+  .hamburger {
+    display: flex;
+    margin-right: 0.5rem;
   }
 
-  span {
-    font-size: 0.78rem;
+  .user-actions {
+    display: none; /* Hide top right user actions on mobile */
+  }
+
+  .menu {
+    position: absolute;
+    top: 110%;
+    left: 0;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    padding: 1rem 0;
+    flex-direction: column;
+    align-items: center;
+    transform: translateY(-20px);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 999;
+  }
+
+  .menu.is-open {
+    transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .menu ul {
+    flex-direction: column;
+    width: 100%;
+    column-gap: 0;
+    row-gap: 0.2rem;
+  }
+
+  .menu ul li {
+    width: 90%;
+    text-align: center;
   }
 
   a {
-    font-size: 0.88rem;
-    padding: 0.4rem 0.7rem;
+    display: block;
+    width: 100%;
+    font-size: 1.15rem; /* Letras ligeramente más grandes */
+    padding: 0.75rem 1rem;
   }
 
-  .user-actions .me-3 {
-    display: none; /* hide username on small screens */
+  .mobile-logout {
+    display: block;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
   }
+  
+  .mobile-logout button {
+    font-size: 1.1rem;
+    padding: 0.6rem;
+  }
+
+  h1 { font-size: 1.35rem; }
+  span { font-size: 0.9rem; }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 400px) {
   .descr span {
     display: none;
   }
+  h1 { font-size: 1.25rem; }
 }
 </style>
