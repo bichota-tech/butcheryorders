@@ -1,5 +1,6 @@
 import logger from '../utils/logger.js'
 import { extractClientInfo, segmentTranscript } from '../utils/nlp.utils.js'
+import prisma from '../config/database.js'
 
 /**
  * Extract order intent and items from voice transcript
@@ -105,6 +106,23 @@ export const extractOrderIntent = (transcript) => {
 
     // Product patterns - applied to each segment independently
     const productPatterns = [
+        {
+            // "media docena de huevos", "una docena de chorizos"
+            regex: /(media|un|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\s+docenas?\s+(?:de\s+)?([a-záéíóúñ\s]+)/i,
+            extract: (match) => {
+                const word = match[1].toLowerCase()
+                let multiplier = 12
+                let baseQuantity = quantityMap[word] || 1
+                if (word === 'media') {
+                    baseQuantity = 0.5
+                }
+                return {
+                    quantity: baseQuantity * multiplier,
+                    unit: 'units',
+                    product: match[2].trim()
+                }
+            }
+        },
         {
             // Special: compango de fabada/pote para X personas
             // Voice: "compango de fabada para cuatro personas", "compango de pote para 6 personas"
@@ -345,16 +363,46 @@ export const matchProductNames = async (extractedItems, products) => {
                 notes: notes
             })
         } else {
-            logger.warn('No product match found', { product: item.product })
-            matchedItems.push({
-                productId: null,
-                productName: item.product,
-                quantity: item.quantity,
-                unit: item.unit,
-                notes: null,
-                confidence: 0.3,
-                needsManualReview: true
-            })
+            logger.warn('No product match found, creating dynamically', { product: item.product })
+            try {
+                const formattedName = item.product.charAt(0).toUpperCase() + item.product.slice(1).toLowerCase()
+                const newProduct = await prisma.product.create({
+                    data: {
+                        name: formattedName,
+                        category: 'Otros',
+                        unit: item.unit,
+                        pricePerUnit: 0,
+                        isActive: true
+                    }
+                })
+
+                sortedProducts.push(newProduct)
+                sortedProducts.sort((a, b) => b.name.length - a.name.length)
+
+                matchedItems.push({
+                    productId: newProduct.id,
+                    productName: newProduct.name,
+                    quantity: item.quantity,
+                    unit: item.unit,
+                    notes: null,
+                    transcripcionOriginal: item.transcripcionOriginal || null,
+                    confidence: 0.5,
+                    needsManualReview: true
+                })
+                logger.info('Dynamically created product', { id: newProduct.id, name: newProduct.name })
+            } catch (error) {
+                logger.error('Failed to create dynamic product', { error: error.message })
+                matchedItems.push({
+                    productId: null,
+                    productName: item.product,
+                    quantity: item.quantity,
+                    unit: item.unit,
+                    notes: null,
+                    transcripcionOriginal: item.transcripcionOriginal || null,
+                    confidence: 0.3,
+                    needsManualReview: true
+                })
+            }
         }
     }
 

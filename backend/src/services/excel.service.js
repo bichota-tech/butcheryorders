@@ -12,7 +12,8 @@ export const generateOrdersExcel = async (orders) => {
         { header: 'Fecha Pedido', key: 'createdAt', width: 20 },
         { header: 'Estado', key: 'status', width: 15 },
         { header: 'Fecha Recogida', key: 'pickupDate', width: 20 },
-        { header: 'Productos', key: 'items', width: 50 }
+        { header: 'Productos', key: 'items', width: 50 },
+        { header: 'Transcripción', key: 'transcript', width: 50 }
     ]
 
     // Style header
@@ -51,14 +52,15 @@ export const generateOrdersExcel = async (orders) => {
                     day: '2-digit', month: '2-digit', year: 'numeric'
                 })
                 : '-',
-            items: itemsList
+            items: itemsList,
+            transcript: order.transcript || '-'
         })
     })
 
     // Auto-filter
     worksheet.autoFilter = {
         from: 'A1',
-        to: `G${orders.length + 1}`
+        to: `H${orders.length + 1}`
     }
 
     return workbook

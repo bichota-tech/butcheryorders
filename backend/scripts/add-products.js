@@ -11,6 +11,8 @@ const prisma = new PrismaClient()
 const catalog = [
     // ── 🥩 Ternera ──────────────────────────────────────────────────────────
     { id: 'chuleton-de-ternera', name: 'Chuletón de ternera', category: 'Ternera', unit: 'kg', pricePerUnit: 0 },
+    { id: 'chuletinas-de-cordero', name: 'Chuletinas de cordero', category: 'Ternera', unit: 'kg', pricePerUnit: 0 },
+    { id: 'rollo-sin-relleno', name: 'Rollo sin relleno', category: 'Ternera', unit: 'kg', pricePerUnit: 0 },
     { id: 'entrecot-de-ternera', name: 'Entrecot de ternera', category: 'Ternera', unit: 'kg', pricePerUnit: 0 },
     { id: 'solomillo-de-ternera', name: 'Solomillo de ternera', category: 'Ternera', unit: 'kg', pricePerUnit: 0 },
     { id: 'escalopines-de-ternera', name: 'Escalopines de ternera', category: 'Ternera', unit: 'kg', pricePerUnit: 0 },
@@ -26,7 +28,6 @@ const catalog = [
     { id: 'paletilla', name: 'Paletilla', category: 'Ternera', unit: 'units', pricePerUnit: 0 },
     { id: 'lechazo-entero', name: 'Lechazo entero', category: 'Ternera', unit: 'units', pricePerUnit: 0 },
     { id: 'medio-lechazo', name: 'Medio lechazo', category: 'Ternera', unit: 'units', pricePerUnit: 0 },
-    { id: 'chuletinas-de-cordero', name: 'Chuletinas de cordero', category: 'Ternera', unit: 'kg', pricePerUnit: 0 },
     { id: 'higado-de-ternera', name: 'Hígado de ternera', category: 'Ternera', unit: 'kg', pricePerUnit: 0 },
     { id: 'filetes-de-tapa', name: 'Filetes de tapa', category: 'Ternera', unit: 'kg', pricePerUnit: 0 },
     { id: 'filetes-de-babilla', name: 'Filetes de babilla', category: 'Ternera', unit: 'kg', pricePerUnit: 0 },
@@ -41,6 +42,8 @@ const catalog = [
     { id: 'chamon', name: 'Chamón', category: 'Ternera', unit: 'kg', pricePerUnit: 0 },
 
     // ── 🐖 Cerdo de Castaña ─────────────────────────────────────────────────
+    { id: 'jamon-iberico', name: 'Jamón ibérico', category: 'Cerdo', unit: 'kg', pricePerUnit: 0 },
+    { id: 'chuleta-de-cerdo', name: 'Chuleta de cerdo', category: 'Cerdo', unit: 'kg', pricePerUnit: 0 },
     { id: 'morcilla-asturiana', name: 'Morcilla asturiana', category: 'Cerdo', unit: 'kg', pricePerUnit: 0 },
     { id: 'lacon', name: 'Lacón', category: 'Cerdo', unit: 'kg', pricePerUnit: 0 },
     { id: 'costilla-de-cerdo', name: 'Costilla de cerdo', category: 'Cerdo', unit: 'kg', pricePerUnit: 0 },
@@ -66,15 +69,22 @@ const catalog = [
     { id: 'jamon-york', name: 'Jamón York', category: 'Cerdo', unit: 'kg', pricePerUnit: 0 },
 
     // ── 🍗 Pollo ────────────────────────────────────────────────────────────
-    { id: 'pollo-entero-deshuesado', name: 'Pollo entero deshuesado', category: 'Pollo', unit: 'units', pricePerUnit: 0 },
+    { id: 'pollo-entero', name: 'Pollo entero', category: 'Pollo', unit: 'units', pricePerUnit: 0 },
+    { id: 'pollo-entero-deshuesado', name: 'Pollo deshuesado', category: 'Pollo', unit: 'units', pricePerUnit: 0 },
+    { id: 'pechuga-de-pollo', name: 'Pechuga', category: 'Pollo', unit: 'kg', pricePerUnit: 0 },
+    { id: 'pechuga-en-filetes', name: 'Pechuga en filetes', category: 'Pollo', unit: 'kg', pricePerUnit: 0 },
+    { id: 'pollo-troceado', name: 'Pollo troceado', category: 'Pollo', unit: 'kg', pricePerUnit: 0 },
     { id: 'carne-picada-de-pollo', name: 'Carne picada de pollo', category: 'Pollo', unit: 'kg', pricePerUnit: 0 },
     { id: 'hamburguesas-de-pollo', name: 'Hamburguesas de pollo', category: 'Pollo', unit: 'kg', pricePerUnit: 0 },
     { id: 'alitas-de-pollo', name: 'Alitas de pollo', category: 'Pollo', unit: 'kg', pricePerUnit: 0 },
-    { id: 'pechuga-de-pollo', name: 'Pechuga de pollo', category: 'Pollo', unit: 'kg', pricePerUnit: 0 },
-    { id: 'pollo-troceado', name: 'Pollo troceado', category: 'Pollo', unit: 'kg', pricePerUnit: 0 },
-    { id: 'pechuga-en-filetes', name: 'Pechuga en filetes', category: 'Pollo', unit: 'kg', pricePerUnit: 0 },
 
     // ── 🔥 Mixtos ───────────────────────────────────────────────────────────
+    { id: 'fabes', name: 'Fabes', category: 'Mixtos', unit: 'kg', pricePerUnit: 0 },
+    { id: 'fabes-pintas', name: 'Fabes pintas', category: 'Mixtos', unit: 'kg', pricePerUnit: 0 },
+    { id: 'lentejas', name: 'Lentejas', category: 'Mixtos', unit: 'kg', pricePerUnit: 0 },
+    { id: 'rollo-relleno', name: 'Rollo relleno', category: 'Mixtos', unit: 'kg', pricePerUnit: 0 },
+    { id: 'rollo-de-pollo', name: 'Rollo de pollo', category: 'Mixtos', unit: 'kg', pricePerUnit: 0 },
+    { id: 'huevos', name: 'Huevos', category: 'Mixtos', unit: 'units', pricePerUnit: 0 },
     { id: 'cachopo', name: 'Cachopo', category: 'Mixtos', unit: 'units', pricePerUnit: 0 },
     { id: 'albondigas-mixtas', name: 'Albóndigas mixtas', category: 'Mixtos', unit: 'kg', pricePerUnit: 0 },
     { id: 'callos-asturianos', name: 'Callos asturianos', category: 'Mixtos', unit: 'kg', pricePerUnit: 0 },
@@ -93,7 +103,7 @@ const catalog = [
     // ── 🧀 Quesos ───────────────────────────────────────────────────────────
     { id: 'queso-azul-cabrales', name: 'Queso azul Cabrales', category: 'Quesos', unit: 'kg', pricePerUnit: 0 },
     { id: 'queso-sandwich', name: 'Queso sándwich', category: 'Quesos', unit: 'kg', pricePerUnit: 0 },
-    { id: 'queso-curado', name: 'Queso curado', category: 'Quesos', unit: 'kg', pricePerUnit: 0 },
+    { id: 'queso-curado', name: 'Queso curado', category: 'Quesos', unit: 'kg', pricePerUnit: 0 }
 ]
 
 async function main() {
