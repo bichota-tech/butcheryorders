@@ -34,13 +34,16 @@ export const extractOrderIntent = (transcript) => {
 
     // Split product list by:
     // 1. "y" or ","
-    // 2. New product boundary: digit OR word-quantity followed by a unit keyword
+    // 2. New product boundary: digit OR word-quantity followed by a unit keyword OR followed by a non-unit word
     //    e.g. "...ternera 300 gr..."   → split before "300 gr"
     //    e.g. "...tiernos medio kilo..." → split before "medio kilo"
-    const UNITS = '(?:kilos?|kg|gramos?|grs?\\b|g\\b|unidades?)'
+    //    e.g. "...ternera tres cachopos..." → split before "tres cachopos"
+    const UNITS = '(?:kilos?|kg|gramos?|grs?\\b|g\\b|unidades?|docenas?)'
     const WORD_QTYS = '(?:medio|media|un|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)'
+
+    // Look-ahead for either a quantity+unit or a quantity+word
     const PRODUCT_BOUNDARY = new RegExp(
-        `\\s+(?=(?:\\d+(?:[.,]\\d+)?|${WORD_QTYS})\\s+${UNITS})`,
+        `\\s+(?=(?:\\d+(?:[.,]\\d+)?|${WORD_QTYS})\\s+(?:${UNITS}|[a-záéíóúñ]+))`,
         'i'
     )
     const segments = productText.split(/\s+y\s+|,\s*/).flatMap(seg =>
