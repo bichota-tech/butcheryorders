@@ -22,30 +22,37 @@ export function useVoiceRecording() {
         recognition.value.lang = 'es-ES' // Spanish
         recognition.value.maxAlternatives = 1
 
+        let lastProcessedFinalIndex = -1
+
         // Event handlers
         recognition.value.onstart = () => {
             console.log('Voice recognition started')
+            lastProcessedFinalIndex = -1
             voiceStore.startRecording()
         }
 
         recognition.value.onresult = (event) => {
             let interim = ''
-            let final = ''
+            let newFinal = ''
 
             for (let i = event.resultIndex; i < event.results.length; i++) {
                 const transcript = event.results[i][0].transcript
                 const confidence = event.results[i][0].confidence
 
                 if (event.results[i].isFinal) {
-                    final += transcript
-                    voiceStore.setConfidence(confidence)
+                    if (i > lastProcessedFinalIndex) {
+                        newFinal += transcript
+                        voiceStore.setConfidence(confidence)
+                        lastProcessedFinalIndex = i
+                    }
                 } else {
+                    // Only the most recent interim transcript matters, prevent accumulating old interims
                     interim += transcript
                 }
             }
 
-            if (final) {
-                voiceStore.updateTranscript(final, false)
+            if (newFinal) {
+                voiceStore.updateTranscript(newFinal, false)
             }
             if (interim) {
                 voiceStore.updateTranscript(interim, true)
