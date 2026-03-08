@@ -42,8 +42,9 @@ export const extractOrderIntent = (transcript) => {
     const WORD_QTYS = '(?:medio|media|un|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)'
 
     // Look-ahead for either a quantity+unit or a quantity+word
+    // BUT negative look-behind after matching space to ensure it's not preceded by "para", so "para 4 personas" doesn't split
     const PRODUCT_BOUNDARY = new RegExp(
-        `\\s+(?=(?:\\d+(?:[.,]\\d+)?|${WORD_QTYS})\\s+(?:${UNITS}|[a-záéíóúñ]+))`,
+        `\\s+(?<!\\bpara\\s+)(?=(?:\\d+(?:[.,]\\d+)?|${WORD_QTYS})\\s+(?:${UNITS}|[a-z\u00e1\u00e9\u00ed\u00f3\u00fa\u00f1]+))`,
         'i'
     )
     const segments = productText.split(/\s+y\s+|,\s*/).flatMap(seg =>
@@ -127,13 +128,13 @@ export const extractOrderIntent = (transcript) => {
             }
         },
         {
-            // Special: compango de fabada/pote para X personas
-            // Voice: "compango de fabada para cuatro personas", "compango de pote para 6 personas"
-            regex: /^compango\s+(?:de\s+(?:fabada|pote|cocido)\s+)?(?:asturiano\s+)?(?:para\s+(\d+|medio|media|un|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\s+personas?)?(?:.*)?$/i,
+            // Special: "[Product] para X personas"
+            // Voice: "compango de fabada para cuatro personas", "fabada para 6 personas", "arroz para dos personas"
+            regex: /^([a-z\u00e1\u00e9\u00ed\u00f3\u00fa\u00f1\s]+?)\s+para\s+(\d+|medio|media|un|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\s+personas?/i,
             extract: (match) => ({
-                quantity: match[1] ? (quantityMap[match[1].toLowerCase()] ?? parseInt(match[1])) || 1 : 1,
+                quantity: match[2] ? (quantityMap[match[2].toLowerCase()] ?? parseInt(match[2])) || 1 : 1,
                 unit: 'personas',
-                product: 'compango'
+                product: match[1].trim()
             })
         },
         {
