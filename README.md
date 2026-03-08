@@ -1,167 +1,70 @@
-# ButcheryOrders — Voice-First Order Management System
+# ButcheryOrders — Sistema de Gestión de Pedidos por Voz
 
-**Status:** 🚧 En progreso (35% Complete)  
-**Project Board:** 📊 [Butchery Kanban](https://github.com/users/bichota-tech/projects/4)
+Este es un sistema full-stack en producción diseñado para automatizar y agilizar la toma de pedidos en una carnicería a través del reconocimiento de voz natural.
 
-Production-ready application for managing butchery orders via voice input with AI-powered natural language processing.
+## 🌟 Características Principales
 
----
-
-## 🎯 Project Overview
-
-This project transforms a basic Vue 3 MVP into a full-stack, production-ready application with:
-
-- 🎙️ **Voice-First Interface**: Web Speech API + Google Cloud Speech-to-Text
-- 🤖 **AI Processing**: NLP for Spanish voice transcript parsing
-- 🔐 **Secure Authentication**: JWT with refresh tokens
-- 📊 **Real-time Dashboard**: Order tracking and analytics
-- 🐳 **Docker Ready**: Easy deployment with docker-compose
-- ✅ **Production Quality**: Testing, CI/CD, monitoring
+*   **Interfaz Basada en Voz:** Permite a los clientes o empleados dictar los pedidos fácilmente usando procesamiento natural del lenguaje (NLP).
+*   **Conversión de Texto a Estructura:** El backend extrae inteligentemente cantidad, producto, unidad y datos del cliente a partir de transcripciones.
+*   **Gestión de Inventario (Catálogo):** Base de datos relacional para validar pedidos en tiempo real.
+*   **Panel de Administración:** Gestión de estados ('Pendiente', 'Completado', 'Archivado') y control de pedidos de forma ágil.
+*   **Seguridad y Autenticación:** JWT con Refresh Tokens, control de roles (Admin/User), Rate Limiting.
+*   **Despliegue Habilitado (Serverless):** Backend nativo para Render, Frontend para Firebase Hosting y Base de Datos en Neon Serverless Postgres.
 
 ---
 
-## ✨ Current Features
+## 🚀 Arquitectura del Sistema
 
-### Backend (✅ Complete)
-- REST API with Express + PostgreSQL + Prisma
-- JWT authentication with refresh tokens
-- NLP service for voice transcript processing
-- Complete CRUD for orders, products, users
-- Rate limiting and security middleware
-- Docker containerization
-
-### Frontend (🔄 60% Complete)
-- Service layer with API client
-- Pinia stores (auth, orders, voice, products)
-- Voice recording composable (Web Speech API)
-- Router with authentication guards
+*   **Frontend:** Vue 3 + Vite, Bootstrap 5, Pinia para manejo de estado.
+*   **Backend:** Node.js + Express, arquitectura basada en servicios y controladores.
+*   **Base de Datos:** PostgreSQL en la nube (Neon).
+*   **ORM:** Prisma.
 
 ---
 
-## 🚀 Quick Start
+## 📖 Documentación
 
-See **[SETUP.md](./SETUP.md)** for detailed setup instructions.
+Puedes consultar la [**Guía Operativa**](GUIA_OPERATIVA.md) para más detalles sobre:
 
-### Using Docker (Recommended)
+1.  Cómo dar permisos de **Administrador**.
+2.  Cómo actualizar la base de datos de producción desde **Neon** y **Prisma**.
+3.  Cómo funciona internamente la arquitectura de voz.
+4.  Comando recurrentes de mantenimiento.
+
+---
+
+## 🛠 Entorno de Desarrollo Local
+
+Si deseas correr este proyecto de forma local para contribuir:
+
+### 1. Variables de Entorno
+Clona el repositorio y crea un archivo `.env` dentro de la carpeta `/backend` usando como base `.env.example`. 
+
+Deberás añadir tus propias claves para Base de Datos y JWT Secrets. Si tienes un `.env.production` en el directorio raíz para el frontend, apúntalo al servidor local.
+
+### 2. Backend
+Abre una terminal, sitúate en la carpeta `/backend` y ejecuta:
+
 ```bash
-docker-compose up -d
-```
-
-### Manual Setup
-```bash
-# Backend
 cd backend
 npm install
-cp .env.example .env
-# Edit .env with your database URL
 npx prisma generate
-npx prisma migrate dev
-npm run seed
+npx prisma db push
+node scripts/add-products.js
+node scripts/seed-admin.js
 npm run dev
+```
+La API estará corriendo en `http://localhost:3100` (o el puerto configurado).
 
-# Frontend (in another terminal)
-cd ..
+### 3. Frontend
+En otra terminal, sitúate en la raíz del proyecto y ejecuta:
+
+```bash
 npm install
 npm run dev
 ```
-
-**Test Credentials:**
-- Admin: admin@butcheryorders.com / admin123
-- User: test@example.com / test123
+La aplicación web de Vue estará corriendo en `http://localhost:5173`.
 
 ---
 
-## 📚 Tech Stack
-
-**Frontend:**
-- Vue 3 + Vite
-- Pinia (state management)
-- Vue Router
-- Axios
-- Bootstrap 5
-
-**Backend:**
-- Node.js + Express
-- PostgreSQL + Prisma ORM
-- JWT authentication
-- Winston (logging)
-- Joi (validation)
-
-**DevOps:**
-- Docker + Docker Compose
-- GitHub Actions (planned)
-- Vercel (frontend deployment - planned)
-- Railway/Render (backend deployment - planned)
-
----
-
-## 📊 Progress
-
-- ✅ Phase 0: Planning & Design (100%)
-- ✅ Phase 1: Backend Infrastructure (100%)
-- 🔄 Phase 2: Voice & AI Integration (50%)
-- 🔄 Phase 3: Frontend Refactoring (60%)
-- ⏳ Phase 4: Testing & Quality (0%)
-- ⏳ Phase 5-8: Security, Monitoring, Features, Deployment (0%)
-
-**Overall: ~35% Complete**
-
-See [walkthrough.md](./brain/walkthrough.md) for detailed progress.
-
----
-
-## 📁 Project Structure
-
-```
-butcheryorders/
-├── backend/              # Express API
-│   ├── src/
-│   │   ├── config/      # Database, auth, CORS
-│   │   ├── controllers/ # Request handlers
-│   │   ├── middleware/  # Auth, validation, errors
-│   │   ├── routes/      # API routes
-│   │   ├── services/    # Business logic
-│   │   └── utils/       # Helpers
-│   ├── prisma/          # Database schema & migrations
-│   └── tests/           # Backend tests
-├── src/                 # Vue 3 frontend
-│   ├── components/      # Vue components
-│   ├── composables/     # Reusable logic
-│   ├── services/        # API clients
-│   ├── stores/          # Pinia stores
-│   ├── router/          # Vue Router
-│   └── views/           # Page components
-├── docker-compose.yml   # Docker setup
-└── SETUP.md            # Setup instructions
-```
-
----
-
-## 🔮 Roadmap
-
-### Next Up
-- [ ] Create Login/Register views
-- [ ] Build NewOrder view with voice UI
-- [ ] Add testing infrastructure (Vitest + Playwright)
-- [ ] Set up CI/CD pipeline
-- [ ] Deploy to staging
-
-### Future Features
-- [ ] Multi-language support (i18n)
-- [ ] PWA with offline support
-- [ ] Admin dashboard
-- [ ] Real-time notifications
-- [ ] Analytics and reporting
-
----
-
-## 👤 Author
-
-Ada (bichota-tech)  
-GitHub: https://github.com/bichota-tech  
-
----
-
-## 📄 License
-
-This project is published for demonstration purposes.
+👤 Proyecto desarrollado por **Ada (bichota-tech)**.
