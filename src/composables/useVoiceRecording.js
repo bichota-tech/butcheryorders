@@ -55,22 +55,22 @@ export function useVoiceRecording() {
         recognition.value.onerror = (event) => {
             console.error('Speech recognition error:', event.error)
 
-            let errorMessage = 'Voice recognition error'
+            let errorMessage = 'Error de reconocimiento de voz'
             switch (event.error) {
                 case 'no-speech':
-                    errorMessage = 'No speech detected. Please try again.'
+                    errorMessage = 'No se detectó voz. Por favor, inténtalo de nuevo.'
                     break
                 case 'audio-capture':
-                    errorMessage = 'No microphone found. Please check your device.'
+                    errorMessage = 'No se encontró ningún micrófono. Por favor, comprueba tu dispositivo.'
                     break
                 case 'not-allowed':
-                    errorMessage = 'Microphone permission denied. Please allow microphone access.'
+                    errorMessage = 'Permiso de micrófono denegado. Por favor, toca el icono del candado en la barra de direcciones y permite el uso del micrófono.'
                     break
                 case 'network':
-                    errorMessage = 'Network error. Please check your connection.'
+                    errorMessage = 'Error de red. Por favor, comprueba tu conexión a internet.'
                     break
                 default:
-                    errorMessage = `Voice recognition error: ${event.error}`
+                    errorMessage = `Error de reconocimiento de voz: ${event.error}`
             }
 
             voiceStore.setError(errorMessage)
@@ -87,7 +87,7 @@ export function useVoiceRecording() {
 
     let isStarting = false
 
-    function startRecording() {
+    async function startRecording() {
         if (isStarting) return
         if (!recognition.value && !initRecognition()) {
             return
@@ -97,15 +97,37 @@ export function useVoiceRecording() {
         voiceStore.setError(null)
         isStarting = true
 
+        // Force explicit microphone permission request - Crucial for Mobile iOS/Android
+        try {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+                // Stop the tracks immediately, we only needed the permission prompt to trigger
+                stream.getTracks().forEach(track => track.stop())
+            } else {
+                console.warn('getUserMedia not supported on this browser version')
+            }
+        } catch (err) {
+            isStarting = false
+            console.error('Microphone permission check error:', err)
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                voiceStore.setError('El navegador bloqueó el micrófono. Toca el candado en tu barra superior de la web y pulsa "Permitir micrófono".')
+            } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                voiceStore.setError('No se detectó ningún micrófono funcional en tu dispositivo.')
+            } else {
+                voiceStore.setError('Sin acceso al micrófono: ' + err.message)
+            }
+            return
+        }
+
         setTimeout(() => {
             try {
                 recognition.value.start()
             } catch (error) {
                 // Already started
-                if (error.message.includes('already started')) {
+                if (error.message && error.message.includes('already started')) {
                     console.warn('Recognition already started')
                 } else {
-                    voiceStore.setError(error.message)
+                    voiceStore.setError(error.message || 'Error al iniciar reconocimiento')
                 }
             } finally {
                 isStarting = false
