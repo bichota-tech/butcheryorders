@@ -110,7 +110,7 @@ export function useVoiceRecording() {
             isStarting = false
             console.error('Microphone permission check error:', err)
             if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-                voiceStore.setError('El navegador bloqueó el micrófono. Toca el candado en tu barra superior de la web y pulsa "Permitir micrófono".')
+                voiceStore.setError('Permiso denegado. Ve a los Ajustes de tu móvil > Apps > Tu Navegador > Permisos, y permite el uso del Micrófono. Luego recarga la página.')
             } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
                 voiceStore.setError('No se detectó ningún micrófono funcional en tu dispositivo.')
             } else {
