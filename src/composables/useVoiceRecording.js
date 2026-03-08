@@ -5,8 +5,9 @@ export function useVoiceRecording() {
     const voiceStore = useVoiceSessionStore()
     const recognition = ref(null)
     const isSupported = ref(false)
-    let isIntentionalStop = false
-    let autoRestartTimeout = null
+
+    let lastProcessedFinalIndex = -1
+    let lastProcessedText = ''
 
     function initRecognition() {
         // Check browser support
@@ -19,7 +20,7 @@ export function useVoiceRecording() {
         recognition.value = new SpeechRecognition()
 
         // Configuration
-        recognition.value.continuous = false // Desactivado para evitar el acumulador infinito de Android
+        recognition.value.continuous = true // Mantenemos continuo. Emularlo con reinicios rompe el cache interno en Chrome Android.
         recognition.value.interimResults = true
         recognition.value.lang = 'es-ES' // Spanish
         recognition.value.maxAlternatives = 1
@@ -27,8 +28,8 @@ export function useVoiceRecording() {
         // Event handlers
         recognition.value.onstart = () => {
             console.log('Voice recognition started')
-            isIntentionalStop = false
-            if (autoRestartTimeout) clearTimeout(autoRestartTimeout)
+            lastProcessedFinalIndex = -1
+            lastProcessedText = ''
             voiceStore.startRecording()
         }
 
@@ -41,16 +42,25 @@ export function useVoiceRecording() {
                 const confidence = event.results[i][0].confidence
 
                 if (event.results[i].isFinal) {
-                    newFinal += transcript
-                    voiceStore.setConfidence(confidence)
+                    // Block Android Chrome repeating already processed indices in continuous mode
+                    if (i > lastProcessedFinalIndex) {
+                        const cleanText = transcript.trim().toLowerCase()
+
+                        // Block Android Chrome occasionally splitting the exact same text into multiple indices
+                        if (cleanText && cleanText !== lastProcessedText) {
+                            newFinal += transcript + ' '
+                            voiceStore.setConfidence(confidence)
+                            lastProcessedText = cleanText
+                        }
+                        lastProcessedFinalIndex = i
+                    }
                 } else {
-                    // Solo el texto provisorio más reciente nos importa
+                    // Guardamos solo el texto en tiempo real
                     interim += transcript
                 }
             }
 
             if (newFinal) {
-                // Al concatenar directamente, emulamos continuous=true sin sufrir el array infinito de Android
                 voiceStore.updateTranscript(newFinal, false)
             }
             if (interim) {
@@ -59,13 +69,8 @@ export function useVoiceRecording() {
         }
 
         recognition.value.onerror = (event) => {
-            if (event.error === 'no-speech') {
-                // Ignore no-speech internally since we'll just auto-restart
-                return
-            }
-
             console.error('Speech recognition error:', event.error)
-            isIntentionalStop = true
+
             let errorMessage = 'Error de reconocimiento de voz'
             switch (event.error) {
                 case 'audio-capture':
@@ -86,20 +91,8 @@ export function useVoiceRecording() {
         }
 
         recognition.value.onend = () => {
-            if (!isIntentionalStop && voiceStore.isRecording && !voiceStore.error) {
-                // Simulamos modo "continuous" a prueba de fallos reiniciandolo tras pararse
-                autoRestartTimeout = setTimeout(() => {
-                    try {
-                        recognition.value.start()
-                    } catch (e) {
-                        console.error('Error auto-restarting:', e)
-                        voiceStore.stopRecording()
-                    }
-                }, 50)
-            } else {
-                console.log('Voice recognition ended intentionally or by global error')
-                voiceStore.stopRecording()
-            }
+            console.log('Voice recognition ended explicitly or user paused for too long.')
+            voiceStore.stopRecording()
         }
 
         isSupported.value = true
@@ -157,9 +150,6 @@ export function useVoiceRecording() {
     }
 
     function stopRecording() {
-        isIntentionalStop = true
-        if (autoRestartTimeout) clearTimeout(autoRestartTimeout)
-
         if (recognition.value) {
             try {
                 recognition.value.stop()
@@ -168,34 +158,26 @@ export function useVoiceRecording() {
             }
         }
     }
-    try {
-        recognition.value.stop()
-    } catch (error) {
-        console.error('Error stopping recognition:', error)
-    }
-}
+
+    function toggleRecording() {
+        if (voiceStore.isRecording) {
+            stopRecording()
+        } else {
+            startRecording()
+        }
     }
 
-function toggleRecording() {
-    if (voiceStore.isRecording) {
-        stopRecording()
-    } else {
-        isIntentionalStop = false
-        startRecording()
-    }
-}
+    // Cleanup on component unmount
+    onUnmounted(() => {
+        if (recognition.value) {
+            recognition.value.stop()
+        }
+    })
 
-// Cleanup on component unmount
-onUnmounted(() => {
-    if (recognition.value) {
-        recognition.value.stop()
+    return {
+        isSupported,
+        startRecording,
+        stopRecording,
+        toggleRecording
     }
-})
-
-return {
-    isSupported,
-    startRecording,
-    stopRecording,
-    toggleRecording
-}
 }
