@@ -69,6 +69,11 @@ export function useVoiceRecording() {
         }
 
         recognition.value.onerror = (event) => {
+            if (event.error === 'no-speech') {
+                // Ignore silent pauses, don't stop the recording
+                return
+            }
+
             console.error('Speech recognition error:', event.error)
 
             let errorMessage = 'Error de reconocimiento de voz'
@@ -92,7 +97,17 @@ export function useVoiceRecording() {
 
         recognition.value.onend = () => {
             console.log('Voice recognition ended explicitly or user paused for too long.')
-            voiceStore.stopRecording()
+            if (!isManuallyStopped && voiceStore.isRecording) {
+                console.log('Auto-restarting speech recognition due to automatic stop/pause...')
+                try {
+                    recognition.value.start()
+                } catch (error) {
+                    console.error('Failed to auto-restart recognition:', error)
+                    voiceStore.stopRecording()
+                }
+            } else {
+                voiceStore.stopRecording()
+            }
         }
 
         isSupported.value = true
@@ -100,6 +115,7 @@ export function useVoiceRecording() {
     }
 
     let isStarting = false
+    let isManuallyStopped = false
 
     async function startRecording() {
         if (isStarting) return
@@ -110,6 +126,7 @@ export function useVoiceRecording() {
         // Clear previous error before attempting new recording
         voiceStore.setError(null)
         isStarting = true
+        isManuallyStopped = false
 
         // Force explicit microphone permission request - Crucial for Mobile iOS/Android
         try {
@@ -150,6 +167,7 @@ export function useVoiceRecording() {
     }
 
     function stopRecording() {
+        isManuallyStopped = true
         if (recognition.value) {
             try {
                 recognition.value.stop()
