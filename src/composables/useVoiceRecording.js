@@ -40,23 +40,38 @@ export function useVoiceRecording() {
             for (let i = event.resultIndex; i < event.results.length; i++) {
                 const transcript = event.results[i][0].transcript
                 const confidence = event.results[i][0].confidence
+                const rawText = transcript.trim()
+                const cleanText = rawText.toLowerCase()
 
                 if (event.results[i].isFinal) {
                     // Block Android Chrome repeating already processed indices in continuous mode
                     if (i > lastProcessedFinalIndex) {
-                        const cleanText = transcript.trim().toLowerCase()
-
                         // Block Android Chrome occasionally splitting the exact same text into multiple indices
                         if (cleanText && cleanText !== lastProcessedText) {
-                            newFinal += transcript + ' '
-                            voiceStore.setConfidence(confidence)
+                            let textToAppend = rawText
+
+                            // Fix Android Chrome duplicating cumulative previous text
+                            if (lastProcessedText && cleanText.startsWith(lastProcessedText)) {
+                                textToAppend = rawText.substring(lastProcessedText.length).trim()
+                            }
+
+                            if (textToAppend) {
+                                newFinal += textToAppend + ' '
+                                voiceStore.setConfidence(confidence)
+                            }
+
+                            // Always update what the last chunk was to avoid subsequent identical duplications
                             lastProcessedText = cleanText
                         }
                         lastProcessedFinalIndex = i
                     }
                 } else {
-                    // Guardamos solo el texto en tiempo real
-                    interim += transcript
+                    // Guardamos solo el texto en tiempo real, evitando la acumulación en Android Chrome
+                    let interimTextToAdd = rawText
+                    if (lastProcessedText && cleanText.startsWith(lastProcessedText)) {
+                        interimTextToAdd = rawText.substring(lastProcessedText.length).trim()
+                    }
+                    interim += interimTextToAdd + ' '
                 }
             }
 
@@ -64,7 +79,7 @@ export function useVoiceRecording() {
                 voiceStore.updateTranscript(newFinal, false)
             }
             if (interim) {
-                voiceStore.updateTranscript(interim, true)
+                voiceStore.updateTranscript(interim.trim(), true)
             }
         }
 
