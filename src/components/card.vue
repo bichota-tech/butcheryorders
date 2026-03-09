@@ -23,20 +23,17 @@
           <!-- COLUMNA 1: Datos del cliente + Productos -->
           <div class="detail-col detail-col-left">
             <!-- Client Info -->
-            <div class="mb-3 p-3 bg-light rounded" v-if="ordersStore.currentOrder.clientName || ordersStore.currentOrder.clientPhone">
-              <h6 class="fw-bold mb-2 text-center text-md-start"><i class="bi bi-person-fill me-1"></i> Datos del Cliente</h6>
-              <div class="row g-2 client-data-row">
-                <div class="col-12 col-md-6" v-if="ordersStore.currentOrder.clientName">
-                  <small class="text-muted d-block">Nombre</small>
-                  <span class="fw-bold">{{ ordersStore.currentOrder.clientName }}</span>
+            <div class="mb-3 p-3 bg-light rounded" v-if="ordersStore.currentOrder.clientName || ordersStore.currentOrder.clientPhone || ordersStore.currentOrder.pickupDate">
+              <h6 class="fw-bold mb-3 border-bottom pb-2"><i class="bi bi-person-fill me-1"></i> Datos del Cliente</h6>
+              <div class="d-flex flex-column gap-2 client-data-list px-2">
+                <div v-if="ordersStore.currentOrder.clientName">
+                  <span class="text-muted"><i class="bi bi-person me-1"></i>Nombre:</span> <strong class="ms-1">{{ ordersStore.currentOrder.clientName }}</strong>
                 </div>
-                <div class="col-12 col-md-6" v-if="ordersStore.currentOrder.clientPhone">
-                  <small class="text-muted d-block">Teléfono</small>
-                  <span class="fw-bold">{{ ordersStore.currentOrder.clientPhone }}</span>
+                <div v-if="ordersStore.currentOrder.clientPhone">
+                  <span class="text-muted"><i class="bi bi-telephone me-1"></i>Teléfono:</span> <strong class="ms-1">{{ ordersStore.currentOrder.clientPhone }}</strong>
                 </div>
-                <div class="col-12 col-md-6" v-if="ordersStore.currentOrder.pickupDate">
-                  <small class="text-muted d-block">Fecha de Recogida</small>
-                  <span class="fw-bold">{{ formatPickupDate(ordersStore.currentOrder.pickupDate) }}</span>
+                <div v-if="ordersStore.currentOrder.pickupDate">
+                  <span class="text-muted"><i class="bi bi-calendar-check me-1"></i>Fecha de Recogida:</span> <strong class="ms-1">{{ formatPickupDate(ordersStore.currentOrder.pickupDate) }}</strong>
                 </div>
               </div>
             </div>
@@ -305,8 +302,8 @@ function formatPickupDate(dateString) {
     width: 100%;
   }
   
-  .client-data-row {
-    text-align: center;
+  .client-data-list {
+    font-size: 0.95rem;
   }
   
   .detail-col-left h5 {

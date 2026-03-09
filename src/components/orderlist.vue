@@ -14,13 +14,16 @@
       <div class="row g-2">
         <!-- Fila 1: fechas + estado -->
         <div class="col-md-4">
-          <input type="date" class="form-control form-control-sm" v-model="ordersStore.filters.startDate" placeholder="Desde">
+          <label class="form-label small text-muted mb-1">Desde</label>
+          <input type="date" class="form-control form-control-sm" v-model="ordersStore.filters.startDate">
         </div>
         <div class="col-md-4">
-          <input type="date" class="form-control form-control-sm" v-model="ordersStore.filters.endDate" placeholder="Hasta">
+          <label class="form-label small text-muted mb-1">Hasta</label>
+          <input type="date" class="form-control form-control-sm" v-model="ordersStore.filters.endDate">
         </div>
         <div class="col-md-4">
-            <select class="form-select form-select-sm" v-model="ordersStore.filters.status">
+            <label class="form-label small text-muted mb-1 d-none d-md-block">&nbsp;</label>
+            <select class="form-select form-select-sm mt-md-0 mt-2" v-model="ordersStore.filters.status">
                 <option value="">Todos los estados</option>
                 <option value="PENDING">Pendiente</option>
                 <option value="COMPLETED">Completado</option>
@@ -106,7 +109,7 @@
             <span class="order-date">{{ formatDate(order.createdAt) }}</span>
           </span>
           <!-- Show first few items for context -->
-          <span class="order-summary text-muted small text-truncate" style="max-width: 350px;">
+          <span class="order-summary text-muted small text-truncate" style="max-width: 100%;">
              {{ order.items?.map(i => `${i.quantity} ${i.unit} ${i.product?.name || i.productName}`).join(', ') }}
           </span>
         </span>
@@ -286,6 +289,8 @@ h3 {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  overflow: hidden; /* Ensure truncate works for children */
+  width: calc(100% - 24px); /* Leave room for chevron icon */
 }
 
 .order-meta {
