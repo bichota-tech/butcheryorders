@@ -220,8 +220,20 @@ export const segmentTranscript = (transcript) => {
                 const candidate = words.slice(i, i + len).join(' ')
                 const digits = tokenToDigits(candidate)
                 if (digits !== null) {
-                    // Don't overshoot: skip this token if adding it would exceed 9 digits
-                    if (phone.length + digits.length > 9) break
+                    // Si añadir este token sobrepasa los 9 dígitos, cogemos solo la parte que necesitamos para llegar a 9.
+                    if (phone.length + digits.length > 9) {
+                        const neededDigitsCount = 9 - phone.length
+                        phone += digits.slice(0, neededDigitsCount)
+
+                        // Consideramos consumido desde 'afterKw' TODO el string literal original que generó esta porción superpuesta, 
+                        // para que la parte que sobra recaiga en el inicio de la zona de productos si realmente era un número seguido.
+                        // O bien, podemos consumir la longitud completa de los words, de modo que el exceso quede ignorado.
+                        // Dado que el usuario descartó el exceso, consumimos las palabras y paramos.
+                        consumed += words.slice(i, i + len).join(' ').length + (i + len < words.length ? 1 : 0)
+                        matched = true
+                        break
+                    }
+
                     phone += digits
                     // Count chars: words + spaces between them
                     consumed += words.slice(i, i + len).join(' ').length + (i + len < words.length ? 1 : 0)

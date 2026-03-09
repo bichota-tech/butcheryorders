@@ -24,17 +24,17 @@
           <div class="detail-col detail-col-left">
             <!-- Client Info -->
             <div class="mb-3 p-3 bg-light rounded" v-if="ordersStore.currentOrder.clientName || ordersStore.currentOrder.clientPhone">
-              <h6 class="fw-bold mb-2"><i class="bi bi-person-fill me-1"></i> Datos del Cliente</h6>
-              <div class="row g-2">
-                <div class="col-6" v-if="ordersStore.currentOrder.clientName">
+              <h6 class="fw-bold mb-2 text-center text-md-start"><i class="bi bi-person-fill me-1"></i> Datos del Cliente</h6>
+              <div class="row g-2 client-data-row">
+                <div class="col-12 col-md-6" v-if="ordersStore.currentOrder.clientName">
                   <small class="text-muted d-block">Nombre</small>
                   <span class="fw-bold">{{ ordersStore.currentOrder.clientName }}</span>
                 </div>
-                <div class="col-6" v-if="ordersStore.currentOrder.clientPhone">
+                <div class="col-12 col-md-6" v-if="ordersStore.currentOrder.clientPhone">
                   <small class="text-muted d-block">Teléfono</small>
                   <span class="fw-bold">{{ ordersStore.currentOrder.clientPhone }}</span>
                 </div>
-                <div class="col-6" v-if="ordersStore.currentOrder.pickupDate">
+                <div class="col-12 col-md-6" v-if="ordersStore.currentOrder.pickupDate">
                   <small class="text-muted d-block">Fecha de Recogida</small>
                   <span class="fw-bold">{{ formatPickupDate(ordersStore.currentOrder.pickupDate) }}</span>
                 </div>
@@ -288,6 +288,36 @@ function formatPickupDate(dateString) {
   .detail-col-right {
     border-left: 1px solid #f0f0f0;
     padding-left: 1.25rem;
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 767px) {
+  .card-header .d-flex {
+    flex-direction: column;
+    align-items: center !important;
+    text-align: center;
+    gap: 0.5rem;
+  }
+  
+  .card-header .text-muted {
+    text-align: center;
+    width: 100%;
+  }
+  
+  .client-data-row {
+    text-align: center;
+  }
+  
+  .detail-col-left h5 {
+    text-align: center;
+    margin-top: 1rem;
+  }
+  
+  .orderdetails {
+    width: 100%;
+    height: auto;
+    padding: 0;
   }
 }
 </style>

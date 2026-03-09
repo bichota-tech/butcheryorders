@@ -361,4 +361,72 @@ function resetSession() {
     margin-top: 1rem !important;
   }
 }
+
+/* ── Mobile responsive table ──── */
+@media (max-width: 767px) {
+  /* Make table rows act like cards */
+  .table-responsive table {
+    display: block;
+  }
+  .table-responsive thead {
+    display: none; /* Hide headers */
+  }
+  .table-responsive tbody {
+    display: block;
+  }
+  .table-responsive tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    padding: 0.75rem;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+  }
+  .table-responsive td {
+    border: none;
+    padding: 0.25rem 0;
+    display: block;
+  }
+  
+  /* Product Name (Full width) */
+  .table-responsive td:nth-child(1) {
+    width: 100%;
+    font-size: 1.05rem;
+    margin-bottom: 0.25rem;
+  }
+  /* Quantity */
+  .table-responsive td:nth-child(2)::before {
+    content: "Cant: ";
+    font-size: 0.8rem;
+    color: #6c757d;
+  }
+  .table-responsive td:nth-child(2) {
+    width: 30%;
+    font-weight: bold;
+  }
+  /* Unit */
+  .table-responsive td:nth-child(3) {
+    width: 20%;
+    text-align: left;
+  }
+  /* Status Icon */
+  .table-responsive td:nth-child(5) {
+    width: 15%;
+    text-align: right;
+  }
+  /* Action (Trash) */
+  .table-responsive td:nth-child(6) {
+    width: 15%;
+    text-align: right;
+  }
+  
+  /* Notes Input (Full width, bottom) */
+  .table-responsive td:nth-child(4) {
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+}
 </style>

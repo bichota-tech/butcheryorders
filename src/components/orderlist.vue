@@ -329,17 +329,29 @@ h3 {
 
   .header-actions {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center; /* Center horizontally */
+    text-align: center;
     gap: 0.75rem;
+  }
+  
+  h3 {
+    text-align: center;
+    width: 100%;
   }
 
   .header-actions .d-flex {
     width: 100%;
+    justify-content: center; /* Center export button */
   }
 
   .header-actions select,
   .header-actions input {
     font-size: 0.9rem;
+  }
+  
+  .filters .col-12.d-flex.justify-content-end.gap-2 {
+    justify-content: center !important; /* Center Filtrar/Limpiar buttons */
+    margin-top: 0.5rem;
   }
 }
 

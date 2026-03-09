@@ -56,7 +56,9 @@ const pendingCount = computed(() => ordersStore.orders.filter(o => o.status === 
 const completedCount = computed(() => ordersStore.orders.filter(o => o.status === 'COMPLETED').length)
 
 onMounted(() => {
-  ordersStore.fetchOrders()
+  if (ordersStore.orders.length === 0) {
+    ordersStore.fetchOrders()
+  }
 })
 </script>
 
