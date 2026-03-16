@@ -50,7 +50,13 @@ router.beforeEach(async (to, from, next) => {
     try {
       await authStore.fetchProfile()
     } catch (error) {
-      console.error('Failed to fetch profile:', error)
+      console.error('Failed to fetch profile during navigation:', error)
+      // fetchProfile will call logout() if it fails, which clears the token
+      // We should redirect to login if this route requires auth
+      if (to.meta.requiresAuth) {
+        return next({ name: 'Login', query: { redirect: to.fullPath } })
+      }
+      return next()
     }
   }
 

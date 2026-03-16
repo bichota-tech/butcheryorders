@@ -1,6 +1,6 @@
-# ButcheryOrders — Sistema de Gestión de Pedidos por Voz
+# ButcheryOrders — Sistema de Gestión de Pedidos por Voz (Proyecto Finalizado)
 
-Este es un sistema full-stack en producción diseñado para automatizar y agilizar la toma de pedidos en una carnicería a través del reconocimiento de voz natural.
+Este es un sistema full-stack **completado y en producción**, diseñado para automatizar y agilizar la toma de pedidos en una carnicería a través del reconocimiento de voz natural. El proyecto ha alcanzado su versión estable final, con todas las características core implementadas y los issues de autenticación y concurrencia resueltos.
 
 ## 🌟 Características Principales
 
