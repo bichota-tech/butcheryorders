@@ -12,7 +12,12 @@ export const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 5, // 5 attempts
     message: 'Too many login attempts, please try again later',
-    skipSuccessfulRequests: true
+    skipSuccessfulRequests: false, // ✅ FIX: Cambiar de true a false
+    skipFailedRequests: false,
+    requestWasSuccessful: (req, res) => {
+        // Solo contar como exitoso si el status es 200
+        return res.statusCode === 200
+    }
 })
 
 export const voiceLimiter = rateLimit({
