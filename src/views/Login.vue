@@ -59,6 +59,12 @@ const password = ref('')
 
 async function handleLogin() {
   if (!email.value || !password.value) return
-  await authStore.login(email.value, password.value)
+
+  try {
+    await authStore.login(email.value, password.value)
+  } catch (err) {
+    // El error ya se guarda en authStore.error, pero evitamos un rechazo no manejado
+    console.error('Login failed:', err)
+  }
 }
 </script>

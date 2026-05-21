@@ -30,10 +30,10 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret}
       NODE_ENV: ${NODE_ENV:-development}
-      PORT: 3000
+      PORT: 3100
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
     ports:
-      - "3000:3000"
+      - "3100:3100"
     depends_on:
       postgres:
         condition: service_healthy

@@ -2,8 +2,8 @@ import axios from 'axios'
 import router from '@/router'
 
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3100/api',
-    timeout: 30000, // ✅ FIX: Aumentar de 10s a 30s para operaciones lentas de BD/bcrypt
+    baseURL: import.meta.env.VITE_API_URL || '/api',
+    timeout: 30000,
     headers: {
         'Content-Type': 'application/json'
     }
@@ -86,13 +86,11 @@ api.interceptors.response.use(
             }
 
             try {
-                // ✅ FIX: Aumentar timeout también para la solicitud de refresh
-                const response = await axios.post(
-                    `${import.meta.env.VITE_API_URL || 'http://localhost:3100/api'}/auth/refresh`,
-                    { refreshToken },
-                    { timeout: 30000 } // Timeout igual al del API principal
-                )
-
+                // ✅ FIX: Usar axios directo para que la solicitud de refresh no vuelva a pasar por este interceptor
+                const refreshUrl = import.meta.env.VITE_API_URL
+                    ? `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/auth/refresh`
+                    : '/api/auth/refresh'
+                const response = await axios.post(refreshUrl, { refreshToken }, { timeout: 30000 })
                 const { token } = response.data.data
 
                 // Update stored token

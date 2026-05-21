@@ -9,8 +9,8 @@ const prisma = new PrismaClient()
 //  Modifica aqui para añadir usuarios pre-configurados
 const ADMIN_USERS = [
     {
-        email: 'admin@carniceria.com',
-        password: 'Admin1234!',
+        email: 'admin@butcheryorders.com',
+        password: 'admin123',
         name: 'Administrador',
         role: 'ADMIN'
     }
