@@ -23,6 +23,12 @@ export const authenticateToken = (req, res, next) => {
 }
 
 export const requireAdmin = (req, res, next) => {
+    // ✅ FIX: Validar que req.user existe antes de acceder a sus propiedades
+    if (!req.user) {
+        logger.warn('Admin access attempt without user context')
+        return res.status(403).json(errorResponse('User context not found'))
+    }
+
     if (req.user.role !== 'ADMIN') {
         logger.warn('Unauthorized admin access attempt', { userId: req.user.id })
         return res.status(403).json(errorResponse('Admin access required'))

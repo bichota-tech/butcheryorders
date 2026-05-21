@@ -3,7 +3,7 @@ import router from '@/router'
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3100/api',
-    timeout: 10000,
+    timeout: 30000, // ✅ FIX: Aumentar de 10s a 30s para operaciones lentas de BD/bcrypt
     headers: {
         'Content-Type': 'application/json'
     }
@@ -49,12 +49,24 @@ api.interceptors.response.use(
         if (error.response?.status === 401 && !originalRequest._retry) {
             
             if (isRefreshing) {
+                // ✅ FIX: Agregar timeout para evitar que promesas se queden en espera indefinidamente
                 return new Promise(function(resolve, reject) {
                     failedQueue.push({ resolve, reject })
+                    
+                    // Timeout de 15 segundos para la cola
+                    const queueTimeout = setTimeout(() => {
+                        processQueue(new Error('Token refresh queue timeout'), null)
+                        reject(new Error('Token refresh queue timeout'))
+                    }, 15000)
+                    
+                    // Limpiar timeout si se resuelve antes
+                    originalRequest._queueTimeout = queueTimeout
                 }).then(token => {
+                    if (originalRequest._queueTimeout) clearTimeout(originalRequest._queueTimeout)
                     originalRequest.headers.Authorization = `Bearer ${token}`
                     return api(originalRequest)
                 }).catch(err => {
+                    if (originalRequest._queueTimeout) clearTimeout(originalRequest._queueTimeout)
                     return Promise.reject(err)
                 })
             }
@@ -68,15 +80,17 @@ api.interceptors.response.use(
                 // No refresh token, redirect to login
                 localStorage.removeItem('token')
                 localStorage.removeItem('refreshToken')
+                isRefreshing = false // ✅ FIX: Reset flag
                 router.push('/login')
                 return Promise.reject(error)
             }
 
             try {
-                // Attempt to refresh token
+                // ✅ FIX: Aumentar timeout también para la solicitud de refresh
                 const response = await axios.post(
                     `${import.meta.env.VITE_API_URL || 'http://localhost:3100/api'}/auth/refresh`,
-                    { refreshToken }
+                    { refreshToken },
+                    { timeout: 30000 } // Timeout igual al del API principal
                 )
 
                 const { token } = response.data.data
@@ -96,6 +110,7 @@ api.interceptors.response.use(
                 
                 localStorage.removeItem('token')
                 localStorage.removeItem('refreshToken')
+                isRefreshing = false // ✅ FIX: Reset flag before redirect
                 router.push('/login')
                 return Promise.reject(refreshError)
             } finally {
