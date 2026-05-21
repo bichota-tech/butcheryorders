@@ -3,6 +3,13 @@
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 
+if (!process.env.DATABASE_URL) {
+    console.error('❌ ERROR: DATABASE_URL no está definida en el entorno.')
+    process.exit(1)
+}
+
+console.log(`🌐 Conectando a: ${process.env.DATABASE_URL.split('@')[1]}`)
+
 const prisma = new PrismaClient()
 
 // ── Credenciales admin ─────────────────────────────────────────────────────
